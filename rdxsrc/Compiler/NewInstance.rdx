@@ -1,0 +1,45 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class NewInstance extends ValueExpression implements IEmittable
+		{
+			public property MultipleValues parameters;
+
+			public function void Initialize(MultipleValues parameters, const VTAMCollection vtams)
+			{
+				this.parameters = parameters;
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				if(this.parameters != null)
+					CodeEmission.Emit.EmitValues(cs, ces, this.parameters, false);
+
+				local largeuint numDimensions = 0;
+				local VType instanceVType = this._vtams[0].vType;
+
+				if(instanceVType is ArrayOfTypeObject)
+					numDimensions = (instanceVType as ArrayOfTypeObject).dimensions;
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.NewInstance, res1 = instanceVType.longName, int1 = numDimensions } );
+
+				if(this.parameters != null)
+					ces.Pop(this.parameters.vtams.Length);
+
+				ces.Push(1);	// Instance
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "new instance";
+			}
+		}
+	}
+}

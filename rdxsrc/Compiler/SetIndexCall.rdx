@@ -1,0 +1,28 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class SetIndexCall extends ValueExpression
+		{
+			public property ObjectMethod methodCall;
+			public property MultipleValues indexes;
+
+			public function void Initialize(ObjectMethod methodCall, MultipleValues indexes, const VTAMCollection vtams)
+			{
+				this.methodCall = methodCall;
+				this.indexes = indexes;
+				this._vtams = vtams;
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "setindex call";
+			}
+		}
+	}
+}

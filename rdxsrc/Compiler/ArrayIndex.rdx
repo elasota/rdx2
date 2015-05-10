@@ -1,0 +1,36 @@
+using Core;
+using Core.RDX;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class ArrayIndex extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression operand;
+			public property IValueExpression indexes;
+
+			public function void Initialize(IValueExpression operand, IValueExpression indexes, const VTAMCollection vtams)
+			{
+				this.operand = operand;
+				this.indexes = indexes;
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				local largeuint numDimensions = (this.operand.vtams[0].vType as ArrayOfTypeObject).dimensions;
+
+				CodeEmission.Emit.EmitValues(cs, ces, this.operand, false);
+				CodeEmission.Emit.EmitValues(cs, ces, this.indexes, false);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.ArrayIndex, int1 = numDimensions as largeint } );
+				ces.Pop(numDimensions);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "array index";
+			}
+		}
+	}
+}

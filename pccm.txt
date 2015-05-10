@@ -1,0 +1,14 @@
+One feature of RDX is precompiled code modules, or PCCM.  PCCM exported code is now portable.
+
+Once you've exported XIL, you can convert it to C++ code using the rdxncc utility, which can normally be invoked as follows:
+lua <path to rdxncc.lua> <slash-terminated directory to export code files> ...
+   ... <filename to export without extensions> <path to XIL file> ...
+   ... <fully qualified C++ name of PCCM function> <relative path from PCCM path to RDX path>
+
+
+One define that can improve PCCM usage is RDX_ALLOW_PRECOMPILED_DUPLICATES.  Normally, template code is not exported as XIL because templates are duplicable and there is no authoritative version of them.  However, if you can guarantee that a particular version of the template code will be loaded, then it is safe to use.  This normally means one of:
+- Packages loaded for use with ExportSource are permanently loaded, which will prevent conflicting duplicates from being loaded successfully
+- No packages are loaded from untrusted sources
+- Packages from untrusted sources are loaded with CanContainMethods in the type host returning false
+
+PCCM and plugins currently must be loaded at startup.

@@ -1,0 +1,58 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class LogicalBinaryOperation extends ValueExpression implements IEmittableLogical
+		{
+			public enum Operator
+			{
+				And,
+				Or,
+			}
+
+			public property Operator operator;
+			public property IValueExpression leftExpr;
+			public property IValueExpression rightExpr;
+
+			public function void Initialize(Operator op, const VTAMCollection vtams, IValueExpression leftExpr, IValueExpression rightExpr)
+			{
+				this.operator = op;
+				this._vtams = vtams;
+				this.leftExpr = leftExpr;
+				this.rightExpr = leftExpr;
+			}
+
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel)
+			{
+				if(this.operator == Operator.And)
+				{
+					local string evaluateSecondLabel = ces.CreateLabel() + "_and";
+
+					CodeEmission.Emit.EmitLogical(cs, ces, this.leftExpr, evaluateSecondLabel, falseLabel);
+					ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = evaluateSecondLabel } );
+					CodeEmission.Emit.EmitLogical(cs, ces, this.rightExpr, trueLabel, falseLabel);
+				}
+				else if(this.operator == Operator.Or)
+				{
+					local string evaluateSecondLabel = ces.CreateLabel() + "_or";
+
+					CodeEmission.Emit.EmitLogical(cs, ces, this.leftExpr, trueLabel, evaluateSecondLabel);
+					ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = evaluateSecondLabel } );
+					CodeEmission.Emit.EmitLogical(cs, ces, this.rightExpr, trueLabel, falseLabel);
+				}
+				else
+					Utility.Assert(false);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "logical binary expression";
+			}
+		}
+	}
+}

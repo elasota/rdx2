@@ -1,0 +1,12 @@
+CObject: Anything that can potentially be resolved via CompileExpression.  Doesn't necessarily resolve into values, can be things like properties, types, and method groups
+    ValueExpression: Includes .vtams and implements IValueExpression
+    CompilableValueExpression: Implements IValueExpression and ICompilable
+    CompilableObject: Implements ICompilable
+        VType: VTypes
+            StructuredTypeObject (etc.)
+
+SimpleCompilable: Implements ICompilable, nothing else
+
+
+ICompilable: Capable of being compiled during multipass.  Has bool Compile(CompilerState) and bool isCompiled intercepts
+IValueExpression: Has .vtams

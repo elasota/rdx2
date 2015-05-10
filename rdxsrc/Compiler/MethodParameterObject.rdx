@@ -1,0 +1,26 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class MethodParameterObject
+		{
+			public property TypeReference type;
+			public property TokenNode name;
+			public property bool isConst;
+			public property bool isNotNull;
+
+			public function void Initialize(TypeReference type, TokenNode name, bool isConst, bool isNotNull)
+			{
+				this.type = type;
+				this.name = name;
+				this.isConst = isConst;
+				this.isNotNull = isNotNull;
+			}
+		}
+	}
+}

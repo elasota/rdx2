@@ -1,0 +1,87 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class MethodGroup extends CompilableObject implements IContainsOverloads, IVisibilityControlled
+		{
+			private property Visibility _visibility;
+			private property string _name;
+			private property List:<ICallable> _overloads;
+
+			public property bool isIntercept;
+			public property bool isArrayIntercept;
+			public property bool isStatic;
+			public property ParameterList parameterList;
+
+			public function void Initialize(CompilerState cs, string name, Visibility visibility, bool isStatic, bool isIntercept, bool isArrayIntercept, ASTNode incriminate)
+			{
+				this._name = name;
+				this._overloads = new List:<ICallable>();
+				this._incriminateNode = incriminate;
+
+				this.isStatic = isStatic;
+				this.isIntercept = isIntercept;
+				this.isArrayIntercept = isArrayIntercept;
+				this._visibility = visibility;
+	
+				cs.uncompiled.Add(this);
+			}
+
+			public function MethodGroup Clone(CompilerState cs)
+			{
+				local MethodGroup clone = new MethodGroup(cs, this._name, this._visibility, this.isStatic, this.isIntercept, this.isArrayIntercept, this._incriminateNode);
+
+				foreach(ICallable obj in this.overloads)
+					clone._overloads.Add(obj);
+
+				cs.uncompiled.Add(clone);
+				return clone;
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				// Make sure every overload is compiled
+				foreach(ICallable overload in overloads)
+					if(!(overload as MethodObject).isCompiled)
+						return false;
+				FinishCompile();
+				return true;
+			}
+
+			public intercept function string name()
+			{
+				return _name;
+			}
+
+			public intercept function List:<ICallable> overloads()
+			{
+				return _overloads;
+			}
+
+			public intercept function void overloads(List:<ICallable> ov)
+			{
+				_overloads = ov;
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "method group";
+			}
+		}
+	}
+}

@@ -1,0 +1,37 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class DelegateMethodGroup extends SimpleCObject implements IContainsOverloads
+		{
+			private property string _name;
+			private property List:<ICallable> _overloads;
+
+			public function void Initialize(string name)
+			{
+				this._name = name;
+				this._overloads = new List:<ICallable>();
+			}
+
+			public intercept function string name()
+			{
+				return _name;
+			}
+
+			public intercept function List:<ICallable> overloads()
+			{
+				return _overloads;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "delegate method group";
+			}
+		}
+	}
+}

@@ -1,0 +1,15 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface IEmittable
+		{
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals);
+		}
+	}
+}

@@ -1,0 +1,4492 @@
+def 'Core' 'RDX.IncompatibleConversionException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.IncompatibleConversionException/properties',
+}
+
+def 'Core' 'RDX.IncompatibleConversionException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'uint' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'largeuint' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.ArrayOfType' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'RDX.Type',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.ArrayOfType/properties',
+	isFinal : true,
+}
+
+def 'Core' 'RDX.ArrayOfType/properties' '#' 'Core.RDX.Property[C]' 3
+{
+	{
+		name : 'type',
+		isConstant : true,
+		type : res 'Core' 'RDX.Type',
+	},
+	{
+		name : 'numDimensions',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+	{
+		name : 'isConstant',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Core' 'RDX.UnspecifiedException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.UnspecifiedException/properties',
+}
+
+def 'Core' 'RDX.UnspecifiedException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'RDX.Type' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isAbstract : true,
+	isLocalized : true,
+}
+
+arraydef '#' 'Core.byte[C]' 'Core' 'byte' const 1
+
+def 'Core' 'Collections.HashSetBase.HashElementInfo' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'Collections.HashSetBase.HashElementInfo/properties',
+}
+
+def 'Core' 'Collections.HashSetBase.HashElementInfo/properties' '#' 'Core.RDX.Property[C]' 3
+{
+	{
+		name : 'hashCode',
+		type : res 'Core' 'hashcode',
+	},
+	{
+		name : 'next',
+		type : res 'Core' 'largeuint',
+	},
+	{
+		name : 'isInUse',
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Core' 'short' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'byte' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'nullreference' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isFinal : true,
+}
+
+def 'Core' 'RDX.InstructionFileInfo' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.InstructionFileInfo/properties',
+}
+
+def 'Core' 'RDX.InstructionFileInfo/properties' '#' 'Core.RDX.Property[C]' 3
+{
+	{
+		name : 'filename',
+		isConstant : true,
+		type : res 'Core' 'string',
+	},
+	{
+		name : 'line',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+	{
+		name : 'firstInstruction',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+}
+
+def 'Core' 'ulong' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.StackOverflowException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.StackOverflowException/properties',
+}
+
+def 'Core' 'RDX.StackOverflowException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'RDX.InvalidOperationException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.InvalidOperationException/properties',
+}
+
+def 'Core' 'RDX.InvalidOperationException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'RDX.Thread' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isFinal : true,
+}
+
+def 'Core' 'varying' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.MethodParameter' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.MethodParameter/properties',
+}
+
+def 'Core' 'RDX.MethodParameter/properties' '#' 'Core.RDX.Property[C]' 3
+{
+	{
+		name : 'type',
+		isConstant : true,
+		type : res 'Core' 'RDX.Type',
+	},
+	{
+		name : 'isConstant',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'isNotNull',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Core' 'RDX.StorageSpecifier' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_Enum',
+	enumerants : res 'Core' 'RDX.StorageSpecifier/enumerants',
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.StorageSpecifier/enumerants' '#' 'Core.RDX.Enumerant[C]' 5
+{
+	{
+		name : 'SS_Class',
+		value : 0,
+	},
+	{
+		name : 'SS_RefStruct',
+		value : 1,
+	},
+	{
+		name : 'SS_ValStruct',
+		value : 2,
+	},
+	{
+		name : 'SS_Enum',
+		value : 3,
+	},
+	{
+		name : 'SS_Interface',
+		value : 4,
+	},
+}
+
+def 'Core' 'serializationdetector' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.Zone' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.Zone/properties',
+}
+
+def 'Core' 'RDX.Zone/properties' '#' 'Core.RDX.Property[C]' 4
+{
+	{
+		name : 'namespacePrefix',
+		isConstant : true,
+		type : res 'Core' 'string',
+	},
+	{
+		name : 'preferTextOut',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'canContainMethods',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'visibleZones',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Zone[C]',
+		mustBeConstant : true,
+	},
+}
+
+def 'Core' 'RDX.AllocationFailureException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.AllocationFailureException/properties',
+}
+
+def 'Core' 'RDX.AllocationFailureException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+arraydef '#' 'Core.Collections.HashSetBase.HashElementInfo[]' 'Core' 'Collections.HashSetBase.HashElementInfo' 1
+
+def 'Core' 'integralconstant' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isFinal : true,
+}
+
+def 'Core' 'float' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.Enumerant' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.Enumerant/properties',
+}
+
+def 'Core' 'RDX.Enumerant/properties' '#' 'Core.RDX.Property[C]' 2
+{
+	{
+		name : 'name',
+		isConstant : true,
+		type : res 'Core' 'string',
+	},
+	{
+		name : 'value',
+		isConstant : true,
+		type : res 'Core' 'uint',
+	},
+}
+
+arraydef '#' 'Core.RDX.InterfaceImplementation[C]' 'Core' 'RDX.InterfaceImplementation' const 1
+
+def 'Core' 'char' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.RDX.InstructionFileInfo[C]' 'Core' 'RDX.InstructionFileInfo' const 1
+
+arraydef '#' 'Core.char[C]' 'Core' 'char' const 1
+
+def 'Core' 'RDX.StructuredType' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'RDX.Type',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.StructuredType/properties',
+	isFinal : true,
+}
+
+def 'Core' 'RDX.StructuredType/properties' '#' 'Core.RDX.Property[C]' 10
+{
+	{
+		name : 'parentClass',
+		isConstant : true,
+		type : res 'Core' 'RDX.StructuredType',
+	},
+	{
+		name : 'interfaces',
+		isConstant : true,
+		type : res '#' 'Core.RDX.InterfaceImplementation[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'storageSpecifier',
+		isConstant : true,
+		type : res 'Core' 'RDX.StorageSpecifier',
+	},
+	{
+		name : 'virtualMethods',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Method[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'properties',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Property[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'enumerants',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Enumerant[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'defaultValue',
+		isConstant : true,
+		type : res 'Core' 'Object',
+	},
+	{
+		name : 'isFinal',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'isAbstract',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'isLocalized',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Core' 'largeint' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.NullReferenceException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.NullReferenceException/properties',
+}
+
+def 'Core' 'RDX.NullReferenceException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'bool' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.RDX.Method[C]' 'Core' 'RDX.Method' const 1
+
+def 'Core' 'RDX.DelegateType' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'RDX.Type',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.DelegateType/properties',
+	isFinal : true,
+}
+
+def 'Core' 'RDX.DelegateType/properties' '#' 'Core.RDX.Property[C]' 2
+{
+	{
+		name : 'parameters',
+		isConstant : true,
+		type : res '#' 'Core.RDX.MethodParameter[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'returnTypes',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Type[C]',
+		mustBeConstant : true,
+	},
+}
+
+arraydef '#' 'Core.RDX.Property[C]' 'Core' 'RDX.Property' const 1
+
+def 'Core' 'long' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.OutOfMemoryException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.OutOfMemoryException/properties',
+}
+
+def 'Core' 'RDX.OutOfMemoryException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+arraydef '#' 'Core.RDX.Type[C]' 'Core' 'RDX.Type' const 1
+
+def 'Core' 'double' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'Object' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.RDX.Enumerant[C]' 'Core' 'RDX.Enumerant' const 1
+
+def 'Core' 'ushort' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.RDX.Zone[C]' 'Core' 'RDX.Zone' const 1
+
+def 'Core' 'Array' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isAbstract : true,
+	isLocalized : true,
+}
+
+def 'Core' 'hashcode' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.InterfaceImplementation' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.InterfaceImplementation/properties',
+}
+
+def 'Core' 'RDX.InterfaceImplementation/properties' '#' 'Core.RDX.Property[C]' 2
+{
+	{
+		name : 'type',
+		isConstant : true,
+		type : res 'Core' 'RDX.StructuredType',
+	},
+	{
+		name : 'vftOffset',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+}
+
+def 'Core' 'int' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_ValStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'RDX.ImmutableObjectException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.ImmutableObjectException/properties',
+}
+
+def 'Core' 'RDX.ImmutableObjectException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'RDX.DivideByZeroException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.DivideByZeroException/properties',
+}
+
+def 'Core' 'RDX.DivideByZeroException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'RDX.Method' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.Method/properties',
+	isFinal : true,
+}
+
+def 'Core' 'RDX.Method/properties' '#' 'Core.RDX.Property[C]' 9
+{
+	{
+		name : 'parameters',
+		isConstant : true,
+		type : res '#' 'Core.RDX.MethodParameter[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'returnTypes',
+		isConstant : true,
+		type : res '#' 'Core.RDX.Type[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'bytecode',
+		isConstant : true,
+		type : res '#' 'Core.byte[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'resArgs',
+		isConstant : true,
+		type : res '#' 'Core.Object[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'instructionFileInfos',
+		isConstant : true,
+		type : res '#' 'Core.RDX.InstructionFileInfo[C]',
+		mustBeConstant : true,
+	},
+	{
+		name : 'numInstructions',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+	{
+		name : 'vftIndex',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+	{
+		name : 'thisParameterOffset',
+		isConstant : true,
+		type : res 'Core' 'int',
+	},
+	{
+		name : 'isAbstract',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+}
+
+arraydef '#' 'Core.RDX.MethodParameter[C]' 'Core' 'RDX.MethodParameter' const 1
+
+def 'Core' 'RDX.Property' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_RefStruct',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'RDX.Property/properties',
+}
+
+def 'Core' 'RDX.Property/properties' '#' 'Core.RDX.Property[C]' 4
+{
+	{
+		name : 'name',
+		isConstant : true,
+		type : res 'Core' 'string',
+	},
+	{
+		name : 'type',
+		isConstant : true,
+		type : res 'Core' 'RDX.Type',
+	},
+	{
+		name : 'isConstant',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+	{
+		name : 'mustBeConstant',
+		isConstant : true,
+		type : res 'Core' 'bool',
+	},
+}
+
+arraydef '#' 'Core.Object[C]' 'Core' 'Object' const 1
+
+def 'Core' 'RDX.InternalFailureException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.InternalFailureException/properties',
+}
+
+def 'Core' 'RDX.InternalFailureException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'GenericException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'GenericException/vft',
+	properties : res 'Core' 'GenericException/properties',
+}
+
+def 'Core' 'GenericException/properties' '#' 'Core.RDX.Property[C]' 2
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+	{
+		name : '_desc',
+		type : res 'Core' 'string',
+	},
+}
+
+def 'Core' 'Collections.ListBase' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : res 'Core' 'Collections.ListBase/properties',
+}
+
+def 'Core' 'Collections.ListBase/properties' '#' 'Core.RDX.Property[C]' 2
+{
+	{
+		name : '_capacity',
+		type : res 'Core' 'largeuint',
+	},
+	{
+		name : '_length',
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'RDX.IndexOutOfBoundsException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'RDX.IndexOutOfBoundsException/properties',
+}
+
+def 'Core' 'RDX.IndexOutOfBoundsException/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'Collections.HashSetBase.ElementType' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_Enum',
+	enumerants : res 'Core' 'Collections.HashSetBase.ElementType/enumerants',
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+def 'Core' 'Collections.HashSetBase.ElementType/enumerants' '#' 'Core.RDX.Enumerant[C]' 3
+{
+	{
+		name : 'Unallocated',
+		value : 0,
+	},
+	{
+		name : 'Deleted',
+		value : 1,
+	},
+	{
+		name : 'Used',
+		value : 2,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Collections.HashSetBase/vft',
+	properties : res 'Core' 'Collections.HashSetBase/properties',
+	isAbstract : true,
+}
+
+def 'Core' 'Collections.HashSetBase/properties' '#' 'Core.RDX.Property[C]' 3
+{
+	{
+		name : '_freeScanPos',
+		type : res 'Core' 'largeuint',
+	},
+	{
+		name : '_hashElements',
+		type : res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	},
+	{
+		name : '_serializationDetector',
+		type : res 'Core' 'serializationdetector',
+	},
+}
+
+def 'Core' 'Exception' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'Exception/properties',
+}
+
+def 'Core' 'Exception/properties' '#' 'Core.RDX.Property[C]' 1
+{
+	{
+		name : 'innerException',
+		type : res 'Core' 'Exception',
+	},
+}
+
+def 'Core' 'string' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+	isFinal : true,
+}
+
+def 'Core' 'Collections.KeyNotFoundException' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Exception',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Core' 'Exception/vft',
+	properties : res 'Core' 'Exception/properties',
+}
+
+def 'Core' 'GenericException/vft' '#' 'Core.RDX.Method[C]' 1
+{
+	res 'Core' 'GenericException/methods/description()',
+}
+
+def 'Core' 'Collections.HashSetBase/vft' '#' 'Core.RDX.Method[C]' 4
+{
+	res 'Core' 'Collections.HashSetBase/methods/MoveElement(Core.largeuint,Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/ClearElement(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/CreateNewContents(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/InsertOldContents(notnull Core.Array,Core.largeuint,Core.largeuint)',
+}
+
+def 'Core' 'Exception/vft' '#' 'Core.RDX.Method[C]' 1
+{
+	res 'Core' 'Exception/methods/description()',
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__le(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'string/methods/Substring(Core.largeuint,Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-()' '#' 'Core.RDX.MethodParameter[C]' 0
+{
+}
+
+def '#' 'PL-(Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'hashcode/methods/ToLargeUInt()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.hashcode)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.double)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'double',
+}
+
+def 'Core' 'double/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.int,Core.int)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'int',
+	},
+	{
+		type : res 'Core' 'int',
+	},
+}
+
+def 'Core' 'largeint/methods/__add(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__eq(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__mod(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__ne(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Array,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'Array',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'int/methods/__gt(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__add(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'hashcode/methods/GetHashCode()/bytecode' '#' 'Core.byte[C]' 5
+{
+  0,  34,   0,  35,   1, 
+}
+
+def 'Core' 'hashcode/methods/GetHashCode()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Internal.rdx',
+		line : 101,
+		firstInstruction : 0,
+	},
+}
+
+def 'Core' 'hashcode/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.hashcode)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'hashcode/methods/GetHashCode()/bytecode',
+	numInstructions : 2,
+	instructionFileInfos : res 'Core' 'hashcode/methods/GetHashCode()/debugInfo',
+}
+
+def 'Core' 'uint/methods/__div(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.HashSetBase)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'Collections.HashSetBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'string/methods/GetEnumerator()/bytecode' '#' 'Core.byte[C]' 10
+{
+  0,  21,   0,  34,   0,  30,  15,   1,  35,   1, 
+}
+
+def 'Core' 'string/methods/GetEnumerator()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Internal.rdx',
+		line : 352,
+		firstInstruction : 0,
+	},
+}
+
+def 'Core' 'string/methods/GetEnumerator()/resArgs' '#' 'Core.Object[C]' 2
+{
+	res '#' 'Core.char[C]',
+	res 'Core' 'string/methods/Chars()',
+}
+
+def 'Core' 'string/methods/GetEnumerator()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string)',
+	returnTypes : res '#' 'TT-(#Core.char[C])',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'string/methods/GetEnumerator()/bytecode',
+	numInstructions : 5,
+	resArgs : res 'Core' 'string/methods/GetEnumerator()/resArgs',
+	instructionFileInfos : res 'Core' 'string/methods/GetEnumerator()/debugInfo',
+}
+
+def 'Core' 'largeint/methods/__mul(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__add(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__le(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__add(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Initialize()/bytecode' '#' 'Core.byte[C]' 44
+{
+  0,  18,   0,  38,   8,   0,  34,   1,  29,  38,   0,   0,  34,   0,  30,  28, 
+  0,  29,  34,   1,  30,  22,   1,   1,  34,   0,  30,  28,   1,  29,  21,   2, 
+ 34,   0,  30,  34,   1,  30,  16,   3,  32,  20,  35,   0, 
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Initialize()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 6
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 243,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 244,
+		firstInstruction : 4,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 245,
+		firstInstruction : 9,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 246,
+		firstInstruction : 16,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 243,
+		firstInstruction : 23,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 241,
+		firstInstruction : 24,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Initialize()/resArgs' '#' 'Core.Object[C]' 4
+{
+	res 'Core' 'largeuint',
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'Array',
+	res 'Core' 'Collections.HashSetBase/methods/CreateNewContents(Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Initialize()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/Initialize()/bytecode',
+	numInstructions : 25,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/Initialize()/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/Initialize()/debugInfo',
+}
+
+def 'Core' 'double/methods/__eq(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.Array)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'Array',
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__ge(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.ulong)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'ulong',
+}
+
+def 'Core' 'RDX.OutOfMemoryException.instance' 'Core' 'RDX.OutOfMemoryException' 1
+{
+}
+
+def '#' 'PL-(Core.ulong)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'ulong',
+	},
+}
+
+def 'Core' 'bool/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.bool)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/MoveElement(Core.largeuint,Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-()',
+	vftIndex : 1,
+	thisParameterOffset : 1,
+	bytecode : null,
+	isAbstract : true,
+}
+
+def '#' 'TT-(Core.byte)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'byte',
+}
+
+def 'Core' 'double/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.ushort)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'ushort',
+	},
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Object/methods/GetType()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Object)',
+	returnTypes : res '#' 'TT-(Core.RDX.Type)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Array/methods/Dimension(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__lt(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Array,Core.largeuint,notnull Core.Array,Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 5
+{
+	{
+		type : res 'Core' 'Array',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'Array',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'byte/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.UnspecifiedException.instance' 'Core' 'RDX.UnspecifiedException' 1
+{
+}
+
+def 'Core' 'int/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'bool/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.bool)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__mul(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/FindFree()/bytecode' '#' 'Core.byte[C]' 101
+{
+  0,  18,   0,  34,   0,  30,  28,   1,  34,   1,  29,  18,   1,  21,   1,  34, 
+  1,  30,  15,   2,  34,   2,  29,  18,   1,  34,   0,  30,  28,   0,  34,   3, 
+ 29,  34,   3,  30,  34,   2,  30,   8,  30,   3,  34,   1,  30,  34,   3,  30, 
+ 27,   1,  28,   2,  30,   9,  12,  21,   1,  34,   3,  30,  38,   1,   1,  15, 
+  4,  34,   0,  30,  28,   0,  29,  34,   3,  35,   1,  21,   1,  34,   3,  30, 
+ 21,   1,  38,   1,   5,  15,   6,  15,   4,  34,   3,  29,   6,  95,  34,   2, 
+ 35,   1,  20,  20,  20, 
+}
+
+def 'Core' 'Collections.HashSetBase/methods/FindFree()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 11
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 211,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 212,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 213,
+		firstInstruction : 13,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 214,
+		firstInstruction : 19,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 216,
+		firstInstruction : 24,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 219,
+		firstInstruction : 32,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 220,
+		firstInstruction : 41,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 222,
+		firstInstruction : 43,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 214,
+		firstInstruction : 52,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 224,
+		firstInstruction : 53,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 211,
+		firstInstruction : 55,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/FindFree()/resArgs' '#' 'Core.Object[C]' 7
+{
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'largeuint',
+	res 'Core' 'Array/methods/Length()',
+	res 'Core' 'largeuint/methods/__ne(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__add(Core.largeuint)',
+	res 'Core' 'byte',
+	res 'Core' 'byte/methods/#coerce(Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/FindFree()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/FindFree()/bytecode',
+	numInstructions : 58,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/FindFree()/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/FindFree()/debugInfo',
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.bool,Core.largeuint,Core.largeuint)' '#' 'Core.RDX.Type[C]' 3
+{
+	res 'Core' 'bool',
+	res 'Core' 'largeuint',
+	res 'Core' 'largeuint',
+}
+
+def 'Core' 'uint/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.hashcode)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'hashcode',
+	},
+}
+
+def '#' 'PL-(notnull Core.Array)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'Array',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def '#' 'PL-(Core.float)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'float',
+	},
+}
+
+def 'Core' 'char/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.char)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__eq(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.ushort)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.ushort)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__le(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Object/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Object)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.uint)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'uint',
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/bytecode' '#' 'Core.byte[C]' 185
+{
+130,   0, 240,  20,  18,   0,  34,   0,  30,  28,   1,  34,   2,  29,  18,   1, 
+ 34,   2,  30,  34,   1,  30,  27,   1,  34,   3,  29,  18,   2,  34,   3,  25, 
+ 28,   1,  34,   4,  29,  34,   4,  21,   0,  80,   8,  15,   3,  34,   0,   9, 
+  0,  84,  16,   4,  38,   0,   5,  41,   0, 176,  28,   2,  29,  35,   0,  18, 
+  2,  34,   4,  34,   5,  50,   0,  64,   2,  30,  34,   5,  22,   0,  96,   1, 
+ 34,   6,  29,  34,   6,  35,   0, 145,   7, 116,   6,  20,  18,   2,  21,   2, 
+ 21,  79,   0,  80,   0,  30,  15,   7,  21,  39,   0,  69,  15,   8,  15,   9, 
+ 36,   0,  33,   8,  50,  91,   0,   1, 103,   0,  32,  16,  10,  69,   0,  53, 
+  4,  30,  27, 140,   0,  19,  29, 111,   0,  18,   4, 111,   0,  32,  34,   5, 
+ 11,   0,  69,   8,  10,   3,  34,  34,   0, 118,  28,   1,  29,   6,  31,  34, 
+  1, 126,   0,  52,  29,   6,  22, 172,   0,  39,  34,   4,  23,   0,  10, 185, 
+  0, 112,  20,  20,  20,  20,  20,  35,   0, 
+}
+
+def 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 27
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 63,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 64,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 65,
+		firstInstruction : 14,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 66,
+		firstInstruction : 20,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 69,
+		firstInstruction : 25,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 70,
+		firstInstruction : 30,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 71,
+		firstInstruction : 38,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 75,
+		firstInstruction : 39,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 77,
+		firstInstruction : 43,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 80,
+		firstInstruction : 44,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 78,
+		firstInstruction : 52,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 77,
+		firstInstruction : 57,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 84,
+		firstInstruction : 58,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 85,
+		firstInstruction : 73,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 88,
+		firstInstruction : 78,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 89,
+		firstInstruction : 85,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 90,
+		firstInstruction : 96,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 91,
+		firstInstruction : 104,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 94,
+		firstInstruction : 109,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 91,
+		firstInstruction : 117,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 99,
+		firstInstruction : 118,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 85,
+		firstInstruction : 126,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 105,
+		firstInstruction : 127,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 106,
+		firstInstruction : 132,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 107,
+		firstInstruction : 140,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 63,
+		firstInstruction : 148,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 61,
+		firstInstruction : 153,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/resArgs' '#' 'Core.Object[C]' 11
+{
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'Collections.HashSetBase.HashElementInfo',
+	res 'Core' 'largeuint',
+	res 'Core' 'largeuint/methods/__eq(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/ClearElement(Core.largeuint)',
+	res 'Core' 'bool',
+	res 'Core' 'largeuint/methods/__ne(Core.largeuint)',
+	res 'Core' 'hashcode/methods/ToLargeUInt()',
+	res 'Core' 'Array/methods/Length()',
+	res 'Core' 'largeuint/methods/__mod(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/MoveElement(Core.largeuint,Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/bytecode',
+	numInstructions : 154,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/RemoveKey(Core.largeuint)/debugInfo',
+}
+
+def 'Core' 'byte/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Object/methods/CanConvertTo(notnull Core.RDX.Type)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Object,notnull Core.RDX.Type)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull #Core.char[C],Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 3
+{
+	{
+		type : res '#' 'Core.char[C]',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__sub(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 3
+{
+	{
+		type : res 'Core' 'Collections.HashSetBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'long/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__mod(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.HashSetBase,notnull Core.Array,Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 4
+{
+	{
+		type : res 'Core' 'Collections.HashSetBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'Array',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'float/methods/__sub(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.ushort)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'ushort',
+}
+
+def '#' 'TT-(Core.string)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'string',
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.ListBase)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'Collections.ListBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Exception/methods/description()/bytecode' '#' 'Core.byte[C]' 6
+{
+  0,  39,   0,   1,  35,   1, 
+}
+
+def 'Core' 'Exception/methods/description()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Internal.rdx',
+		line : 380,
+		firstInstruction : 0,
+	},
+}
+
+def 'Core' 'Exception/methods/description()/resArgs' '#' 'Core.Object[C]' 2
+{
+	'nil',
+	res 'Core' 'string',
+}
+
+def 'Core' 'Exception/methods/description()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Exception)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	vftIndex : 1,
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Exception/methods/description()/bytecode',
+	numInstructions : 2,
+	resArgs : res 'Core' 'Exception/methods/description()/resArgs',
+	instructionFileInfos : res 'Core' 'Exception/methods/description()/debugInfo',
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.largeint)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'largeint',
+}
+
+def 'Core' 'double/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.hashcode)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'hashcode',
+}
+
+def 'Core' 'float/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.HashSetBase,Core.hashcode)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'Collections.HashSetBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'hashcode',
+	},
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.InvalidOperationException.instance' 'Core' 'RDX.InvalidOperationException' 1
+{
+}
+
+def 'Core' 'uint/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__sub(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.AllocationFailureException.instance' 'Core' 'RDX.AllocationFailureException' 1
+{
+}
+
+def 'Core' 'uint/methods/__mul(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__div(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__lt(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__gt(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__eq(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/__add(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__gt(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__div(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.string,Core.string)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'string',
+	},
+}
+
+def 'Core' 'uint/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.string,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'uint/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.long)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'long',
+}
+
+def 'Core' 'float/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.RDX.Thread)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'RDX.Thread',
+}
+
+def '#' 'PL-(Core.long)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'long',
+	},
+}
+
+def 'Core' 'string/methods/__index(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.char)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.short)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'short',
+}
+
+def 'Core' 'largeuint/methods/__div(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.string,Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 3
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'string/methods/Substring(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'string/methods/Length()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'string/methods/FromChars(notnull #Core.char[C],Core.largeuint,Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull #Core.char[C],Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	bytecode : null,
+}
+
+def '#' 'TT-(#Core.char[C])' '#' 'Core.RDX.Type[C]' 1
+{
+	res '#' 'Core.char[C]',
+}
+
+def '#' 'PL-(notnull Core.string)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def '#' 'TT-(Core.uint)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'uint',
+}
+
+def 'Core' 'largeint/methods/__neg()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.double)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'double',
+	},
+}
+
+def 'Core' 'short/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.short)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'short',
+	},
+}
+
+def 'Core' 'uint/methods/__mod(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint,Core.uint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.bool)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Core' 'int/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.StackOverflowException.instance' 'Core' 'RDX.StackOverflowException' 1
+{
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Array/methods/ToNonConst()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array)',
+	returnTypes : res '#' 'TT-(Core.Array)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.GenericException)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'GenericException',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'long/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__gt(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__gt(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__ge(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'string/methods/__add(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,Core.string)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.char)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'char',
+	},
+}
+
+def 'Core' 'uint/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.int)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'int',
+}
+
+def '#' 'PL-(Core.uint,Core.uint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'uint',
+	},
+	{
+		type : res 'Core' 'uint',
+	},
+}
+
+def '#' 'PL-(notnull Core.Exception)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'Exception',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'Collections.ListBase/methods/Clear()/bytecode' '#' 'Core.byte[C]' 21
+{
+  0,  38,   0,   0,  34,   0,  30,  28,   1,  29,  38,   0,   0,  34,   0,  30, 
+ 28,   0,  29,  35,   0, 
+}
+
+def 'Core' 'Collections.ListBase/methods/Clear()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 3
+{
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 63,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 64,
+		firstInstruction : 5,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 61,
+		firstInstruction : 10,
+	},
+}
+
+def 'Core' 'Collections.ListBase/methods/Clear()/resArgs' '#' 'Core.Object[C]' 1
+{
+	res 'Core' 'largeuint',
+}
+
+def 'Core' 'Collections.ListBase/methods/Clear()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.ListBase)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.ListBase/methods/Clear()/bytecode',
+	numInstructions : 11,
+	resArgs : res 'Core' 'Collections.ListBase/methods/Clear()/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.ListBase/methods/Clear()/debugInfo',
+}
+
+def 'Core' 'largeuint/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__sub(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'char/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.char)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'string/methods/Chars()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string)',
+	returnTypes : res '#' 'TT-(#Core.char[C])',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.bool,Core.largeuint)' '#' 'Core.RDX.Type[C]' 2
+{
+	res 'Core' 'bool',
+	res 'Core' 'largeuint',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/CreateNewContents(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.Array)',
+	vftIndex : 3,
+	thisParameterOffset : 1,
+	bytecode : null,
+	isAbstract : true,
+}
+
+def 'Core' 'RDX.ImmutableObjectException.instance' 'Core' 'RDX.ImmutableObjectException' 1
+{
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Rehash()/bytecode' '#' 'Core.byte[C]' 234
+{
+130,  30, 247,  62,  18,   0,  34,   0,  30,  28,   1,  34,   1,  29,  18,   1, 
+ 18,   1,  21,   1,  34,   1,  30,  15,   2,  34,   3,  29,  18,   1,  38,   0, 
+  1,  34,   4,  29,   6,  10,  21,   1,  34,   4,  30,  21,   1,  38,   1,   3, 
+ 15,   4,  15,   5,  34,   4,  29,  34,   4,  30,  34,   3,  30,   8,  19,   6, 
+ 34,   1,  30,  34,   4,  30,  27,   1,  28,   2,  30,  10, 107,  21,   1,  34, 
+  2,  39,   0, 163,   2,  29,   6,  97,  20,  18,   1,  38,   8,   1,  50,   0, 
+ 81,   2,  30,   8,   9,   7,  76,   0,  80,  38,   2,   1,  15,   8,  91,   0, 
+ 16, 116,  99,   0,  64,   0,  30,  28,   0,  33,   0,   3, 123,   0, 176,   8, 
+  2,   9,  35,   0,  18,   0,  34,   1,  34,   5,  22,   0, 113,  22,   1,   0, 
+ 34,   1,  29,  34,  39,   0, 128,   1,  29,  18,  10,  21,  10,  34,   0, 117, 
+  0,  67,  16,  11,  34,   6, 164,   0,  18,   7, 164,   0,  23,   7, 125,   0, 
+ 65,   7,  29,  34,   7, 164,   0, 116,  34,   6,  34,   5,  30,  34,   7, 164, 
+  0,   1, 225,   0,  37,   0,  30,  20,   0, 112,   0,  30,  15,  12,  34,   8, 
+ 29,  19,   0,  16,   6,  19,   0, 240,   2,  34,   8,  30,  16,  13,  20,   6, 
+ 82,  20,  20,  20,  20,  20,  20,  20,  35,   0, 
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Rehash()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 28
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 175,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 176,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 177,
+		firstInstruction : 7,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 178,
+		firstInstruction : 14,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 180,
+		firstInstruction : 33,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 181,
+		firstInstruction : 41,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 180,
+		firstInstruction : 50,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 178,
+		firstInstruction : 51,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 184,
+		firstInstruction : 52,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 185,
+		firstInstruction : 56,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 186,
+		firstInstruction : 61,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 185,
+		firstInstruction : 68,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 188,
+		firstInstruction : 69,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 190,
+		firstInstruction : 74,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 191,
+		firstInstruction : 81,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 193,
+		firstInstruction : 82,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 194,
+		firstInstruction : 86,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 195,
+		firstInstruction : 91,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 197,
+		firstInstruction : 96,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 198,
+		firstInstruction : 105,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 200,
+		firstInstruction : 124,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 202,
+		firstInstruction : 132,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 203,
+		firstInstruction : 146,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 202,
+		firstInstruction : 155,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 200,
+		firstInstruction : 156,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 198,
+		firstInstruction : 157,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 175,
+		firstInstruction : 158,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 173,
+		firstInstruction : 164,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Rehash()/resArgs' '#' 'Core.Object[C]' 14
+{
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'largeuint',
+	res 'Core' 'Array/methods/Length()',
+	res 'Core' 'byte',
+	res 'Core' 'byte/methods/#coerce(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__add(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__lt(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__le(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__mul(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__eq(Core.largeuint)',
+	res 'Core' 'Array',
+	res 'Core' 'Collections.HashSetBase/methods/CreateNewContents(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)',
+	res 'Core' 'Collections.HashSetBase/methods/InsertOldContents(notnull Core.Array,Core.largeuint,Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/Rehash()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/Rehash()/bytecode',
+	numInstructions : 165,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/Rehash()/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/Rehash()/debugInfo',
+}
+
+def 'Core' 'int/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__mod(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__lt(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Object,notnull Core.RDX.Type)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'Object',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'RDX.Type',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'Array/methods/Length()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__le(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__gt(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.largeint,Core.largeint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'largeint',
+	},
+	{
+		type : res 'Core' 'largeint',
+	},
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.uint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.uint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.byte)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'byte',
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/ClearElement(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint)',
+	returnTypes : res '#' 'TT-()',
+	vftIndex : 2,
+	thisParameterOffset : 1,
+	bytecode : null,
+	isAbstract : true,
+}
+
+def 'Core' 'largeint/methods/__eq(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'long/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.long)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__ge(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.Thread/methods/GetCurrent()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-()',
+	returnTypes : res '#' 'TT-(Core.RDX.Thread)',
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-()' '#' 'Core.RDX.Type[C]' 0
+{
+}
+
+def '#' 'PL-(Core.largeint)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'largeint',
+	},
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__neg()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.bool)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'bool',
+}
+
+def 'Core' 'float/methods/__div(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.float)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__ne(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__mul(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__le(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.RDX.Type)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'RDX.Type',
+}
+
+def 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/bytecode' '#' 'Core.byte[C]' 149
+{
+129,  36, 210,  18,   0,  34,   0,  30,  28,   1,  34,   2,  29,  18,   0,  21, 
+ 12,   0, 242,   6,  30,  34,   1,  30,  15,   1,  34,   3,  29,  34,   3,  30, 
+ 38,   0,   0,   7,   8,   2,  34,   3,  30,  26,   0,  98,   8,   3,   2,  37, 
+  3,   2,  52,   0,  48,   0,  34,   4,  34,   0, 240,   9,  34,   4,  30,   8, 
+  5,   4,  38,   0,   5,  34,   3,  34,   4,  35,   3,  18,   0,  34,   4,  34, 
+  5,  29,  34,   5,  59,   0, 240,   0,   8,   4,   6,  38,   8,   0,  34,   5, 
+ 29,  18,   0,  34,   5,  34,   6,  22,   0, 128,  34,   3,  30,   8,  19,   2, 
+ 21,   0,  33,   0,  66,   2,   0,  15,   7,  44,   0,  35,  34,   6,  91,   0, 
+  1,  39,   0, 240,   1,   6, 106,  38,   1,   5,  34,   3,  34,   5,  35,   3, 
+ 20,  20,  20,  20,  20, 
+}
+
+def 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 19
+{
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 36,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 37,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 38,
+		firstInstruction : 17,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 39,
+		firstInstruction : 28,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 41,
+		firstInstruction : 30,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 42,
+		firstInstruction : 36,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 43,
+		firstInstruction : 41,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 45,
+		firstInstruction : 45,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 46,
+		firstInstruction : 49,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 47,
+		firstInstruction : 53,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 49,
+		firstInstruction : 56,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 50,
+		firstInstruction : 60,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 52,
+		firstInstruction : 65,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 53,
+		firstInstruction : 72,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 54,
+		firstInstruction : 77,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 55,
+		firstInstruction : 79,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 50,
+		firstInstruction : 82,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 58,
+		firstInstruction : 83,
+	},
+	{
+		filename : 'rdxsrc/List.rdx',
+		line : 36,
+		firstInstruction : 87,
+	},
+}
+
+def 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/resArgs' '#' 'Core.Object[C]' 8
+{
+	res 'Core' 'largeuint',
+	res 'Core' 'largeuint/methods/__add(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__lt(Core.largeuint)',
+	res 'Core' 'RDX.OutOfMemoryException.instance',
+	res 'Core' 'largeuint/methods/__le(Core.largeuint)',
+	res 'Core' 'bool',
+	res 'Core' 'largeuint/methods/__eq(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__mul(Core.largeuint)',
+}
+
+def 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.ListBase,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool,Core.largeuint,Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/bytecode',
+	numInstructions : 92,
+	resArgs : res 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.ListBase/methods/IncreaseSize(Core.largeuint)/debugInfo',
+}
+
+def 'Core' 'largeint/methods/#coerce(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__add(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.largeuint)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'largeuint',
+}
+
+def 'Core' 'byte/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__div(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int,Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/InsertOldContents(notnull Core.Array,Core.largeuint,Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,notnull Core.Array,Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-()',
+	vftIndex : 4,
+	thisParameterOffset : 1,
+	bytecode : null,
+	isAbstract : true,
+}
+
+def 'Core' 'GenericException/methods/description()/bytecode' '#' 'Core.byte[C]' 8
+{
+  0,  34,   0,  30,  28,   1,  35,   1, 
+}
+
+def 'Core' 'GenericException/methods/description()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Internal.rdx',
+		line : 390,
+		firstInstruction : 0,
+	},
+}
+
+def 'Core' 'GenericException/methods/description()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.GenericException)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	vftIndex : 1,
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'GenericException/methods/description()/bytecode',
+	numInstructions : 4,
+	instructionFileInfos : res 'Core' 'GenericException/methods/description()/debugInfo',
+}
+
+def '#' 'PL-(Core.double,Core.double)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'double',
+	},
+	{
+		type : res 'Core' 'double',
+	},
+}
+
+def 'Core' 'byte/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__lt(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.InternalFailureException.instance' 'Core' 'RDX.InternalFailureException' 1
+{
+}
+
+def 'Core' 'ushort/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/bytecode' '#' 'Core.byte[C]' 261
+{
+130,  92, 241,   6,  18,   0,  34,   0,  30,  28,   1,  34,   2,  29,  18,   1, 
+ 21,   1,  34,   2,  30,  15,   2,  34,   3,  12,   0, 241,  24,  21,   1,  34, 
+  1,  30,  15,   3,  34,   3,  30,  15,   4,  34,   4,  29,  18,   5,  34,   2, 
+ 30,  34,   4,  30,  27,   1,  34,   5,  29,  34,   5,  25,  28,   2,  30,   9, 
+ 25,  38,   1,   6,  11,   0,  48,  29,  34,   1,   8,   0,  64,   0,  29,  34, 
+  4,   8,   0,  53,   1,  29,  34,  46,   0,  81,  29,  34,   4,  35,   1,  92, 
+  0, 163,   0,  30,  15,   7,  34,   6,  29,  34,   6,  30, 105,   0,  48,   8, 
+ 11,   8,  21,   0,  17,   9,  28,   0,   0, 109,   0,  51,  10,  35,   1, 122, 
+  0,   0,  77,   0,   5, 125,   0,  64,   7,  29,  34,   7,  77,   0,  81,   8, 
+128,  67,  11,  18,  28,   0,  80,   1,  34,   8,  29,  18,  69,   0, 193,  34, 
+  8,  30,  27,   1,  28,   1,  34,   9,  29,  34,   9,  35,   0, 121,  13,  11, 
+ 34,   9,  34,   8,  29,  27,   0,  86,   6, 112,  20,  34,   6,  18,   0,  16, 
+ 29, 110,   0, 114,   7,  30,  34,   6,  30,  16,  12, 168,   0,  17,   6, 168, 
+  0,  20,   7, 179,   0,  18,  28, 181,   0,  22,  20, 108,   0,  39,  34,   6, 
+ 28,   0,  64,  18,   5,  34,   1,  76,   0, 197,  38,   1,   6,  23,   9,   3, 
+  0,   1,   2,   5,  34,   9,  70,   0, 192,  20,  34,   6,  35,   1,  20,  20, 
+ 20,  20,  20,  20,  20, 
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 35
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 113,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 114,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 115,
+		firstInstruction : 13,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 117,
+		firstInstruction : 24,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 120,
+		firstInstruction : 32,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 122,
+		firstInstruction : 37,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 123,
+		firstInstruction : 42,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 124,
+		firstInstruction : 47,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 125,
+		firstInstruction : 52,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 126,
+		firstInstruction : 59,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 129,
+		firstInstruction : 61,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 130,
+		firstInstruction : 68,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 132,
+		firstInstruction : 75,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 133,
+		firstInstruction : 78,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 136,
+		firstInstruction : 85,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 137,
+		firstInstruction : 98,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 141,
+		firstInstruction : 103,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 143,
+		firstInstruction : 109,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 144,
+		firstInstruction : 118,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 146,
+		firstInstruction : 123,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 147,
+		firstInstruction : 126,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 144,
+		firstInstruction : 134,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 143,
+		firstInstruction : 135,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 152,
+		firstInstruction : 136,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 155,
+		firstInstruction : 144,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 156,
+		firstInstruction : 151,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 159,
+		firstInstruction : 158,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 160,
+		firstInstruction : 166,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 141,
+		firstInstruction : 168,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 165,
+		firstInstruction : 169,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 166,
+		firstInstruction : 175,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 167,
+		firstInstruction : 183,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 168,
+		firstInstruction : 198,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 165,
+		firstInstruction : 200,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 113,
+		firstInstruction : 201,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/resArgs' '#' 'Core.Object[C]' 13
+{
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'largeuint',
+	res 'Core' 'Array/methods/Length()',
+	res 'Core' 'hashcode/methods/ToLargeUInt()',
+	res 'Core' 'largeuint/methods/__mod(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase.HashElementInfo',
+	res 'Core' 'bool',
+	res 'Core' 'Collections.HashSetBase/methods/FindFree()',
+	res 'Core' 'largeuint/methods/__eq(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/Rehash()',
+	res 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)',
+	res 'Core' 'largeuint/methods/__ne(Core.largeuint)',
+	res 'Core' 'Collections.HashSetBase/methods/MoveElement(Core.largeuint,Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.hashcode)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/bytecode',
+	numInstructions : 207,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/NewKey(Core.hashcode)/debugInfo',
+}
+
+def 'Core' 'largeint/methods/__ge(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.long)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.long)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__ge(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.int)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'int',
+	},
+}
+
+def 'Core' 'float/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeint/methods/__ne(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeint,Core.largeint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.NullReferenceException.instance' 'Core' 'RDX.NullReferenceException' 1
+{
+}
+
+def 'Core' 'int/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Array/methods/BlockCopy(Core.largeuint,notnull Core.Array,Core.largeuint,Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array,Core.largeuint,notnull Core.Array,Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Object)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'Object',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def 'Core' 'Array/methods/ToConst()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array)',
+	returnTypes : res '#' 'TT-(Core.Array)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'int/methods/__neg()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.int)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__ne(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.largeint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.largeint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__ge(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.ListBase,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'Collections.ListBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'largeuint/methods/__sub(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/__eq(Core.float)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float,Core.float)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(Core.float,Core.float)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'float',
+	},
+	{
+		type : res 'Core' 'float',
+	},
+}
+
+def 'Core' 'short/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/#coerce(Core.ulong)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.ulong)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'byte/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.byte)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'largeuint/methods/__lt(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'RDX.DivideByZeroException.instance' 'Core' 'RDX.DivideByZeroException' 1
+{
+}
+
+def 'Core' 'RDX.IncompatibleConversionException.instance' 'Core' 'RDX.IncompatibleConversionException' 1
+{
+}
+
+def 'Core' 'float/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/GetHashCode()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.hashcode)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__le(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'short/methods/#coerce(Core.ushort)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.short)',
+	returnTypes : res '#' 'TT-(Core.ushort)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'Collections.HashSetBase',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'double/methods/__sub(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__neg()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__ne(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__mul(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.double)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/__lt(Core.double)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double,Core.double)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Array/methods/Clone()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Array)',
+	returnTypes : res '#' 'TT-(Core.Array)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.char)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'char',
+}
+
+def 'Core' 'RDX.IndexOutOfBoundsException.instance' 'Core' 'RDX.IndexOutOfBoundsException' 1
+{
+}
+
+def 'Core' 'GenericException.OutOfMemoryException' 'Core' 'GenericException' 1
+{
+	_desc : 'Allocation failed'
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/bytecode' '#' 'Core.byte[C]' 79
+{
+  0,  18,   0,  34,   0,  30,  28,   1,  34,   2,  29,  18,   1,  21,   1,  34, 
+  2,  30,  15,   2,  34,   3,  29,  34,   2,  30,  34,   1,  30,  27,   1,  28, 
+  2,  30,  10,   4,  38,   1,   3,  34,   1,  35,   2,  21,   1,  34,   1,  30, 
+ 21,   1,  38,   1,   4,  15,   5,  15,   6,  34,   1,  29,  34,   1,  30,  34, 
+  3,  30,   7, 104,   7,  38,   0,   3,  38,   0,   1,  35,   2,  20,  20, }
+
+def 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 8
+{
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 230,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 231,
+		firstInstruction : 6,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 234,
+		firstInstruction : 13,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 235,
+		firstInstruction : 21,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 236,
+		firstInstruction : 24,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 232,
+		firstInstruction : 33,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 238,
+		firstInstruction : 38,
+	},
+	{
+		filename : 'rdxsrc/HashTable.rdx',
+		line : 230,
+		firstInstruction : 41,
+	},
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/resArgs' '#' 'Core.Object[C]' 8
+{
+	res '#' 'Core.Collections.HashSetBase.HashElementInfo[]',
+	res 'Core' 'largeuint',
+	res 'Core' 'Array/methods/Length()',
+	res 'Core' 'bool',
+	res 'Core' 'byte',
+	res 'Core' 'byte/methods/#coerce(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__add(Core.largeuint)',
+	res 'Core' 'largeuint/methods/__lt(Core.largeuint)',
+}
+
+def 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.Collections.HashSetBase,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool,Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : res 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/bytecode',
+	numInstructions : 43,
+	resArgs : res 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/resArgs',
+	instructionFileInfos : res 'Core' 'Collections.HashSetBase/methods/NextFrom(Core.largeuint)/debugInfo',
+}
+
+def '#' 'PL-(Core.largeuint,Core.largeuint)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'largeuint',
+	},
+	{
+		type : res 'Core' 'largeuint',
+	},
+}
+
+def 'Core' 'largeuint/methods/__mul(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ushort/methods/#coerce(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ushort)',
+	returnTypes : res '#' 'TT-(Core.string)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def '#' 'TT-(Core.float)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'float',
+}
+
+def 'Core' 'largeuint/methods/__ne(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.largeuint,Core.largeuint)',
+	returnTypes : res '#' 'TT-(Core.bool)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'uint/methods/#coerce(Core.int)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.uint)',
+	returnTypes : res '#' 'TT-(Core.int)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'double/methods/#coerce(Core.largeuint)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.double)',
+	returnTypes : res '#' 'TT-(Core.largeuint)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'ulong/methods/#coerce(Core.short)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.ulong)',
+	returnTypes : res '#' 'TT-(Core.short)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+
+def 'Core' 'float/methods/#coerce(Core.byte)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.float)',
+	returnTypes : res '#' 'TT-(Core.byte)',
+	thisParameterOffset : 1,
+	bytecode : null,
+}
+

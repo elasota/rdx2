@@ -1,0 +1,40 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class DefaultInstance extends CompilableObject
+		{
+			public property largeuint[] dimensions;
+			public property string typeOf;
+			public property string value;
+			public property bool isAnonymous;
+
+			public function void Initialize(CompilerState cs, VType vType, string diValue, string name, largeuint[] dimensions, bool isAnonymous)
+			{
+				this.dimensions = dimensions;
+				this.typeOf = vType.longName;
+				this._longName = name;
+				this.value = diValue;
+				this.isAnonymous = isAnonymous;
+
+				cs.defaultInstances.Add(this);
+				cs.gst[name] = this;
+			}
+
+			public final function bool Compile(CompilerState cs)
+			{
+				return false;	// This should never be queued
+			}
+
+			public final intercept function string printableName()
+			{
+				return "default instance";
+			}
+		}
+	}
+}

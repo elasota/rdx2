@@ -1,0 +1,19 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public enum Visibility
+		{
+			Unknown,
+
+			Public,
+			Protected,
+			Private
+		}
+	}
+}

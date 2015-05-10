@@ -1,0 +1,57 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class GuaranteeInnerBlock extends CodeBlock
+		{
+			public function void Initialize(Namespace ownerNamespace, Scope ownerScope, largeuint initialLocalIndex)
+			{
+				(this as CodeBlock).explicit:Initialize(ownerNamespace, ownerScope, initialLocalIndex);
+			}
+
+			public function void Close(CodeEmission.CodeEmissionState ces)
+			{
+				local GuaranteeOuterBlock outerBlock = this.owner as GuaranteeOuterBlock;
+				local string lbl = outerBlock.LabelPrefix;
+				ces.Discharge();
+			
+				// Fall-through code goes to the default path
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = lbl + "_gendtry" } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.EnablePath, str1 = outerBlock.DefaultPath } );
+				ces.AddConstantInstruction("Core.int", CompilerConstants.GuaranteeBlocks.DEFAULT(), Constant.Signal.Value);
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = outerBlock.CodePathLocal.stackIndex } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Move } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = lbl + "_gfinally" } );
+
+				// Exceptions go to the exception-carrying path
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = lbl + "_gcatch" } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Catch, res1 = "Core.Exception" } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = outerBlock.CarriedExceptionLocal.stackIndex } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Move } );
+				ces.AddConstantInstruction("Core.int", CompilerConstants.GuaranteeBlocks.EXCEPTION(), Constant.Signal.Value);
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = outerBlock.CodePathLocal.stackIndex } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Move } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = lbl + "_gfinally" } );
+				ces.Discharge();
+
+				// Emit flow path labels
+				foreach(string pathName, largeuint pathIdx in outerBlock.CodePaths)
+				{
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = pathName } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.EnablePath, str1 = pathName } );
+					ces.AddConstantInstruction("Core.int", ((pathIdx + 1) as string), Constant.Signal.Value);
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = outerBlock.CodePathLocal.stackIndex } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Move } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = lbl + "_gfinally" } );
+				}
+
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = lbl + "_gfinally" } );
+				ces.Discharge();
+			}
+		}
+	}
+}

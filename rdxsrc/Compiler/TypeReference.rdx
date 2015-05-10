@@ -1,0 +1,156 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class TypeReference extends CompilableObject implements IVisibilityControlled
+		{
+			private property Visibility _visibility;	// Potentially for typedefs
+			private property bool isPreresolved;
+
+			public property ASTNode node;
+			public property Scope scope;
+			public property VType refType;
+			public property bool allowDimensions;
+			public property MultipleValues specifiedDimensions;
+
+			public function void Initialize(CompilerState cs, ASTNode node, Scope scope, bool allowDimensions)
+			{
+				this.node = node;
+				this.scope = scope;
+				this.allowDimensions = allowDimensions;
+				this._incriminateNode = node;
+
+				cs.uncompiled.Add(this);
+
+				// Don't use namespaces as lookup scopes!  Use InstanciatedNamespace
+				Utility.Assert(scope == null || !(scope is Namespace));
+			}
+
+			public function void Initialize(VType vt)
+			{
+				// Preresolved type reference
+				this.refType = vt;
+				this.isPreresolved = true;
+				FinishCompile();
+			}
+
+			private static function ArrayOfTypeObject, MultipleValues CompileArrayTypeReference(CompilerState cs, ArrayOfTypeNode node, Scope scope, bool specifyDimensions)
+			{
+				local VType subType;
+				local BaselineTypeNode subTypeNode = node.subType;
+				local MultipleValues specifiedDimensions;
+
+				if(subTypeNode is ArrayOfTypeNode)
+					subType = CompileArrayTypeReference(cs, subTypeNode as ArrayOfTypeNode, scope, false);
+				else
+				{
+					Utility.Assert(subTypeNode is TypeNode);
+					subType = cs.ExpressionToType((subTypeNode as TypeNode).baseType, scope, true);
+				}
+
+				if(subType == null)
+					return null, null;	// Unresolved dependency
+
+				// See if this is cached
+				local largeuint dimensions = node.dimensions;
+
+				if(dimensions == 0)
+				{
+					if(!specifyDimensions)
+						Utility.CError(node, ErrorCode.UnexpectedDimensions);
+
+					if(!cs.gst.ContainsKey(CompilerConstants.arrayIndexType()))
+						throw UnresolvedExpressionSignal.instance;
+
+					local VType arrayIndexType = cs.gst[CompilerConstants.arrayIndexType()] as VType;
+
+					specifiedDimensions = cs.CompileExpressionList(node.specifiedDimensions, scope, true);
+					if(specifiedDimensions.vtams.Length == 0)
+						Utility.CError(node, ErrorCode.ExpectedDimensions);
+
+					local VTAM[] convertVTAMs = new VTAM[specifiedDimensions.vtams.Length];
+					for(local largeuint i=0;i<convertVTAMs.Length;i++)
+						convertVTAMs[i] = new VTAM { accessMode = AccessMode.R, vType = arrayIndexType };
+
+					specifiedDimensions = CompilerState.ConvertExpression(node, specifiedDimensions, new VTAMCollection(convertVTAMs)) as MultipleValues;
+					dimensions = specifiedDimensions.vtams.Length;
+				}
+
+				Utility.Assert(dimensions != 0, "Need to parse out dimensions");
+
+				local string arrayVariationCode = Utility.ArrayOfTypeCode(dimensions, node.isConst);
+				local ArrayOfTypeObject aot;
+
+				if(subType.arraysOf.ContainsKey(arrayVariationCode))
+					aot = subType.arraysOf[arrayVariationCode];
+				else
+				{
+					aot = new ArrayOfTypeObject(cs, subType, dimensions, node.isConst, node);
+					subType.arraysOf[arrayVariationCode] = aot;
+
+					if(!cs.compilingTypes)
+					{
+						// Declared inside a function
+						cs.CompileTypeShells();
+					}
+
+					aot.Compile(cs);
+				}
+				return aot, specifiedDimensions;
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				if(this.isCompiled)
+					return true;	// Was called manually despite being resolved.
+
+				if(this.node is ArrayOfTypeNode)
+				{
+					local ArrayOfTypeObject aot, MultipleValues specifiedDimensions = CompileArrayTypeReference(cs, this.node as ArrayOfTypeNode, this.scope, this.allowDimensions);
+
+					if(aot == null)
+						return false;	// Couldn't resolve
+
+					this.refType = aot;
+					this.node = null;
+					this.specifiedDimensions = specifiedDimensions;
+					FinishCompile();
+					return true;
+				}
+
+				Utility.Assert(this.node is TypeNode);
+
+				// Arrays are allowed here because the expression could be aliased from a typedef that references an array
+				local VType expr = cs.ExpressionToType((this.node as TypeNode).baseType, this.scope, true);
+
+				if(expr == null)
+					return false;	// Couldn't resolve
+
+				this.node = null;	// Don't need the node any more
+				this.refType = expr;
+				FinishCompile();
+				return true;
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "type reference";
+			}
+		}
+	}
+}

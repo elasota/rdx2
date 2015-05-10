@@ -1,0 +1,454 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CodeGeneration
+		{
+			public static function CodeEmission.POp JumpNegation(CodeEmission.POp opcode)
+			{
+				switch(opcode)
+				{
+				case(CodeEmission.POp.JumpIf): { return CodeEmission.POp.JumpIfNot; }
+				case(CodeEmission.POp.JumpIfNot): { return CodeEmission.POp.JumpIf; }
+				case(CodeEmission.POp.JumpIfTrue): { return CodeEmission.POp.JumpIfFalse; }
+				case(CodeEmission.POp.JumpIfFalse): { return CodeEmission.POp.JumpIfTrue; }
+				case(CodeEmission.POp.JumpIfEqual): { return CodeEmission.POp.JumpIfNotEqual; }
+				case(CodeEmission.POp.JumpIfNotEqual): { return CodeEmission.POp.JumpIfEqual; }
+				case(CodeEmission.POp.Jump): { return CodeEmission.POp.Jump; }
+				case(CodeEmission.POp.IterateArray): { return CodeEmission.POp.IterateArray; }
+				}
+				return CodeEmission.POp.Invalid;
+			}
+
+			public static function bool OptionalJumpOpcode(CodeEmission.POp opcode)
+			{
+				switch(opcode)
+				{
+					case(
+						CodeEmission.POp.JumpIf,
+						CodeEmission.POp.JumpIfNot,
+						CodeEmission.POp.JumpIfTrue,
+						CodeEmission.POp.JumpIfFalse,
+						CodeEmission.POp.JumpIfEqual,
+						CodeEmission.POp.JumpIfNotEqual,
+						CodeEmission.POp.Try,
+						CodeEmission.POp.TryCatch,
+						CodeEmission.POp.Case,
+						CodeEmission.POp.IterateArray
+						):
+						{
+							return true;
+						}
+					case(default):
+					{
+						return false;
+					}
+				}
+			}
+
+			public static function bool NonInstructionOpcode(CodeEmission.POp opcode)
+			{
+				switch(opcode)
+				{
+					case(
+							CodeEmission.POp.EnablePath,
+							CodeEmission.POp.DeadCode,
+							CodeEmission.POp.Label,
+							CodeEmission.POp.CheckPathUsage
+						):
+						{
+							return true;
+						}
+					case(default):
+					{
+						return false;
+					}
+				}
+			}
+			
+			
+			// Opcodes which will follow str2 if the str1 label option fails, especially invertible tests.
+			// Ops not in this list may use str2 for something else
+			public static function bool SplittingJumpOpcode(CodeEmission.POp opcode)
+			{
+				switch(opcode)
+				{
+					case(
+							CodeEmission.POp.JumpIf,
+							CodeEmission.POp.JumpIfNot,
+							CodeEmission.POp.JumpIfTrue,
+							CodeEmission.POp.JumpIfFalse,
+							CodeEmission.POp.JumpIfEqual,
+							CodeEmission.POp.JumpIfNotEqual
+						):
+						{
+							return true;
+						}
+					case(default):
+					{
+						return false;
+					}
+				}
+			}
+
+			// Tags instructions with real instruction numbers and barrier depths
+			public static function void TagInstructions(notnull CodeEmission.PInstr[] instrs, notnull Dictionary:<string, largeuint> labels)
+			{
+				local largeuint instrCount = 0;
+				local largeuint barrierCount = 0;
+				foreach(CodeEmission.PInstr instr, largeuint idx in instrs)
+				{
+					if(instr.op == CodeEmission.POp.StartBarrier)
+						barrierCount++;
+					else if(instr.op == CodeEmission.POp.EndBarrier)
+						barrierCount--;
+
+					if(instr.op == CodeEmission.POp.Label)
+						labels[instr.str1] = instrCount;
+
+					if(!NonInstructionOpcode(instr.op))
+					{
+						instrCount++;
+						instr.instructionNumber = instrCount;
+						instr.barrierCount = barrierCount;
+						instrs[idx] = instr;
+					}
+				}
+			}
+
+			// This remaps any jumps that target other jumps so that they point to the same place.
+			public static function void RelinkJumps(notnull CodeEmission.PInstr[] instrList)
+			{
+				local List:<string> activeLabels = new List:<string>();										// List of labels targeting the current instruction
+				local Dictionary:<string, string> remappedLabels = new Dictionary:<string, string>();		// remappedLabels[label] == new label
+				local Dictionary:<string, string> finalRemappedLabels = new Dictionary:<string, string>();
+				local List:<string> labelNames = new List:<string>();										// Kept so that this is deterministic
+
+				foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+				{
+					if(instr.op == CodeEmission.POp.Label)
+					{
+						labelNames.Add(instr.str1);
+						activeLabels.Add(instr.str1);
+					}
+					else
+					{
+						if(instr.op == CodeEmission.POp.Jump)
+						{
+							foreach(string labelName in activeLabels)
+								remappedLabels[labelName] = instr.str1;
+						}
+						activeLabels.Clear();
+					}
+				}
+
+				foreach(string labelName in labelNames)
+				{
+					if(remappedLabels.ContainsKey(labelName))
+					{
+						foreach(string k, string v in remappedLabels)
+						{
+							// If another remap targets this label, reroute it
+							if(v == labelName)
+								remappedLabels[k] = remappedLabels[labelName];
+						}
+						finalRemappedLabels[labelName] = remappedLabels[labelName];
+						remappedLabels.Remove(labelName);
+					}
+				}
+
+				remappedLabels = null;
+
+				// Remap everything
+				foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+				{
+					if(instr.op == CodeEmission.POp.Jump || OptionalJumpOpcode(instr.op))
+					{
+						if(finalRemappedLabels.ContainsKey(instr.str1))
+							instr.str1 = finalRemappedLabels[instr.str1];
+						if(finalRemappedLabels.ContainsKey(instr.str2))
+							instr.str2 = finalRemappedLabels[instr.str2];
+					}
+					instrList[idx] = instr;
+				}
+			}
+
+			public static function void PaintReachable(notnull CodeEmission.PInstr[] instrList, largeuint idx, Dictionary:<string, largeuint> labels)
+			{
+				// These labels are by raw instruction number, not the assembly instruction number, so they need to be rebuilt
+				if(labels == null)
+				{
+					labels = new Dictionary:<string, largeuint>();
+
+					foreach(CodeEmission.PInstr instr, largeuint iidx in instrList)
+					{
+						if(instr.op == CodeEmission.POp.Label)
+							labels[instr.str1] = iidx;
+						else if(instr.op == CodeEmission.POp.AllocLocal || instr.op == CodeEmission.POp.RemoveLocal)
+							instrList[iidx].reachable = true;	// Local manipulation ops are always relevant
+					}
+				}
+
+				local largeuint numInstr = instrList.Length;
+				while(idx < numInstr)
+				{
+					local CodeEmission.PInstr instr = instrList[idx];
+					local bool wasTagged = instr.reachable;
+
+					if(!wasTagged)
+						instrList[idx].reachable = true;
+
+					if(OptionalJumpOpcode(instr.op))
+					{
+						if(wasTagged)
+							return;
+						PaintReachable(instrList, labels[instr.str1], labels);
+						if(instr.str2 != null && SplittingJumpOpcode(instr.op))
+						{
+							// Instruction has a false label, so fall-through isn't reachable
+							PaintReachable(instrList, labels[instr.str2], labels);
+							return;
+						}
+					}
+
+					if(instr.op == CodeEmission.POp.Return)
+					{
+						while(idx < numInstr && instrList[idx].op != CodeEmission.POp.EndBarrier)
+							idx++;
+					}
+					else if(instr.op == CodeEmission.POp.Throw || instr.op == CodeEmission.POp.DeadCode)
+						return;
+					else if(instr.op == CodeEmission.POp.Jump)
+					{
+						if(wasTagged)
+							return;
+						idx = labels[instr.str1];
+					}
+					else
+						idx++;
+				}
+			}
+
+			// Remaps jumps to return instructions to return, used for methods that return no values.  Assists with tail call optimization.
+			public static function void LinkReturnJumps(CodeEmission.PInstr[] instrList)
+			{
+				foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+				{
+					local largeuint targetInstr = ((idx as largeint) + (instr.int1 as largeint)) as largeuint;
+					if(instr.op == CodeEmission.POp.Jump && !instr.doNotChangeOps && instrList[targetInstr].op == CodeEmission.POp.Return)
+					{
+						instr.op = CodeEmission.POp.Return;
+						instr.int1 = 0;
+						instrList[idx] = instr;
+					}
+				}
+			}
+
+			public static function CodeEmission.PInstr[] CorrectBranches(notnull CodeEmission.PInstr[] instrList)
+			{
+				local Dictionary:<string, largeuint> labels = new Dictionary:<string, largeuint>();
+
+				// Consolidate labels
+				RelinkJumps(instrList);
+
+				// Remove dead code
+				do
+				{
+					local largeuint lastReachablePaths;
+					local bool firstPathReachPass = true;
+					while(true)
+					{
+						local HashSet:<string> enabledPaths = new HashSet:<string>();
+						local largeuint numReachablePaths = 0;
+						foreach(CodeEmission.PInstr instr in instrList)
+						{
+							if(instr.op == CodeEmission.POp.EnablePath && (firstPathReachPass || instr.reachable))
+							{
+								local string pathName = instr.str1;
+								if(!enabledPaths[pathName])
+								{
+									enabledPaths.Add(pathName);
+									numReachablePaths++;
+								}
+							}
+						}
+
+						if(!firstPathReachPass)
+						{
+							if(numReachablePaths == lastReachablePaths)
+							{
+								// Didn't change the valid pass list, we're done
+								break;
+							}
+						}
+
+						// Convert path usage checks that didn't survive jumps, which will skip over code paths
+						// that got optimized out from dead code elimination elsewhere
+						foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+						{
+							if(instr.op == CodeEmission.POp.CheckPathUsage && !enabledPaths[instr.str2])
+							{
+								instr.op = CodeEmission.POp.Jump;
+								instr.str2 = null;
+								instrList[idx] = instr;
+							}
+						}
+
+						firstPathReachPass = false;
+						lastReachablePaths = numReachablePaths;
+
+						PaintReachable(instrList, 0, null);
+
+						if(numReachablePaths == 0)
+							break;	// All guaranteed code paths were eliminated
+					}
+				};
+				
+				TagInstructions(instrList, labels);
+
+				local List:<CodeEmission.PInstr> newInstrList = new List:<CodeEmission.PInstr>();
+				foreach(CodeEmission.PInstr instr in instrList)
+				{
+					local CodeEmission.POp op = instr.op;
+					if(instr.reachable)
+						newInstrList.Add(instr);
+					else if(op == CodeEmission.POp.Label)
+						newInstrList.Add(instr);	// Labels need to stay alive to prevent span labels (i.e. exception handlers) from ending at orphan labels
+					else if(op == CodeEmission.POp.DeadCode || op == CodeEmission.POp.EnablePath)
+					{
+						// Pseudo-ops, not actually emitted
+					}
+					else if(op == CodeEmission.POp.CreateLocal)
+					{
+						instr.op = CodeEmission.POp.AllocLocal;		// Local tracking needs to stay live.  Other local manipulation ops are automatically reachable.
+						newInstrList.Add(instr);
+					}
+				}
+
+				instrList = newInstrList.ToArray();
+
+				// Delete any useless jumps and locals
+				while(true)
+				{
+					newInstrList = new List:<CodeEmission.PInstr>();
+					local bool deletedJumps = false;
+					local bool deletedCode = false;
+
+					TagInstructions(instrList, labels);
+
+					local largeuint numInstr = instrList.Length;
+					foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+					{
+						local CodeEmission.POp op = instr.op;
+						if(op == CodeEmission.POp.Jump && (labels[instr.str1] == instr.instructionNumber + 1))
+							deletedJumps = true;
+						else if(op == CodeEmission.POp.AllocLocal && idx != numInstr - 1 && instrList[idx + 1].op == CodeEmission.POp.RemoveLocal)
+							deletedCode = true;
+						else if(op == CodeEmission.POp.RemoveLocal && idx != 0 && instrList[idx - 1].op == CodeEmission.POp.AllocLocal)
+							deletedCode = true;
+						else
+							newInstrList.Add(instr);
+					}
+
+					instrList = newInstrList.ToArray();
+
+					if(!deletedJumps && !deletedCode)
+						break;
+				}
+
+				labels = new Dictionary:<string, largeuint>();
+				TagInstructions(instrList, labels);
+
+				// Split jumps into single jump and fallthrough
+				newInstrList = new List:<CodeEmission.PInstr>();
+				foreach(CodeEmission.PInstr instr in instrList)
+				{
+					if(JumpNegation(instr.op) != CodeEmission.POp.Invalid && instr.str2 != null)
+					{
+						Utility.Assert(instr.str1 != instr.str2);
+
+						local largeuint trueInstr = labels[instr.str1];
+						local largeuint nextInstr = instr.instructionNumber + 1;
+						local string falseLabel;
+
+						if(trueInstr == nextInstr)
+						{
+							instr.op = JumpNegation(instr.op);
+							falseLabel = instr.str1;
+							instr.str1 = instr.str2;
+						}
+						else
+							falseLabel = instr.str2;
+
+						instr.str2 = null;
+
+						newInstrList.Add(instr);
+
+						if(labels[falseLabel] != nextInstr)
+							newInstrList.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = falseLabel, filename = instr.filename, line = instr.line });
+					}
+					else
+						newInstrList.Add(instr);
+				}
+
+				instrList = newInstrList.ToArray();
+
+				TagInstructions(instrList, labels);
+
+				newInstrList = new List:<CodeEmission.PInstr>();
+				foreach(CodeEmission.PInstr instr, largeuint idx in instrList)
+				{
+					local CodeEmission.POp op = instr.op;
+					// Convert cases to jumps now that they can't block execution flow
+					if(op == CodeEmission.POp.Case)
+					{
+						instr.op = CodeEmission.POp.Jump;
+						instr.doNotChangeOps = true;
+					}
+
+					if(NonInstructionOpcode(op))
+					{
+						// Unemitted instructions
+					}
+					else
+					{
+						if(JumpNegation(instr.op) != CodeEmission.POp.Invalid || instr.op == CodeEmission.POp.TryCatch)
+						{
+							instr.int1 = (labels[instr.str1] as largeint) - (instr.instructionNumber as largeint);
+							instr.str1 = null;
+						}
+						else if(instr.op == CodeEmission.POp.Try)
+						{
+							instr.int1 = (labels[instr.str1] as largeint) - (instr.instructionNumber as largeint);
+							instr.int2 = (labels[instr.str2] as largeint) - (instr.instructionNumber as largeint);
+							instr.str1 = null;
+							instr.str2 = null;
+						}
+						newInstrList.Add(instr);
+					}
+				}
+
+				// Remap code locations
+				for(local largeuint i=newInstrList.Length - 1; i != 0; i--)
+				{
+					local CodeEmission.PInstr instr = newInstrList[i];
+					local CodeEmission.PInstr prevInstr = newInstrList[i-1];
+
+					Utility.Assert(instr.filename != null);
+
+					if(instr.filename == prevInstr.filename)
+						instr.filename = null;
+					if(instr.line == prevInstr.line)
+						instr.line = 0;
+				}
+
+				return newInstrList.ToArray();
+			}
+		}
+	}
+}

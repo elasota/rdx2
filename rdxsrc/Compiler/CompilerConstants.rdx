@@ -1,0 +1,155 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+// Variations from rdx_compile:
+// visibility: Use IVisibility
+// vftIndex: Changed to use isVirtual since it can be nil in Lua
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class AssertionFailureException extends Exception
+		{
+			public resource AssertionFailureException instance;
+		}
+
+		public class UnresolvedExpressionSignal extends Exception
+		{
+			public resource UnresolvedExpressionSignal instance;
+		}
+
+		public enum MatchLevel
+		{
+			Unknown,
+
+			Exact = 1,
+			Direct = 2,
+			Lossless = 3,
+			Lossy = 4,
+			Varying = 5,
+			Polymorphic = 6,
+			Unmatchable = 7,
+
+			Count = 8,
+		}
+
+		public enum AccessMode
+		{
+			Any,
+
+			L,	// Local var or parameter
+			P,	// Pointer to a value on the stack
+			CP,	// Constant pointer to a value, located on the stack
+			I,	// Undischarged intercept
+			A,	// Undischarged array index
+			R,	// Value on the stack
+			V,	// Varying
+			D,	// Disposed value (null)
+
+			AnyP,
+		}
+
+		public class CompilerConstants
+		{
+			public property HashSet:<string> rdxtReservedSymbols;
+			public property Dictionary:<string,string> unaryOperatorMethods;
+			public property Dictionary:<string,string> binaryOperatorMethods;
+			public property HashSet:<Enumerant.UnderlyingType> nonInstructionOpcodes;
+			public property HashSet:<Enumerant.UnderlyingType> localReferencingOpcodes;
+			public property HashSet:<Enumerant.UnderlyingType> splittingJumpOpcodes;
+			public property HashSet:<string> parseableTypes;
+			public property HashSet:<string> structuredTypeDeclTypes;
+			public property Dictionary:<string,uint> securityLevels;
+
+			public class GuaranteeBlocks
+			{
+				public static function string EXCEPTION() { return "-1"; }
+				public static function string RETURN() { return "-2"; }
+				public static function string DEFAULT() { return "0"; }
+			}
+
+			public function void Initialize()
+			{
+				rdxtReservedSymbols = new HashSet:<string>();
+				rdxtReservedSymbols.Add("def");
+				rdxtReservedSymbols.Add("import");
+				rdxtReservedSymbols.Add("null");
+				rdxtReservedSymbols.Add("res");
+				rdxtReservedSymbols.Add("string");
+				rdxtReservedSymbols.Add("enum");
+
+				unaryOperatorMethods = new Dictionary:<string,string>();
+				unaryOperatorMethods["-"] = "__neg";
+
+				binaryOperatorMethods = new Dictionary:<string,string>();
+				binaryOperatorMethods["*"] = "__mul";
+				binaryOperatorMethods["*="] = "__mul";
+				binaryOperatorMethods["%"] = "__mod";
+				binaryOperatorMethods["%="] = "__mod";
+				binaryOperatorMethods["/"] = "__div";
+				binaryOperatorMethods["/="] = "__div";
+				binaryOperatorMethods["+"] = "__add";
+				binaryOperatorMethods["+="] = "__add";
+				binaryOperatorMethods["++"] = "__add";
+				binaryOperatorMethods["-"] = "__sub";
+				binaryOperatorMethods["-="] = "__sub";
+				binaryOperatorMethods["--"] = "__sub";
+
+				binaryOperatorMethods["=="] = "__eq";
+				binaryOperatorMethods["!="] = "__ne";
+				binaryOperatorMethods["<="] = "__le";
+				binaryOperatorMethods[">="] = "__ge";
+				binaryOperatorMethods["<"] = "__lt";
+				binaryOperatorMethods[">"] = "__gt";
+
+				localReferencingOpcodes = new HashSet:<Enumerant.UnderlyingType>();
+				localReferencingOpcodes.Add(CodeEmission.POp.NewInstanceSet);
+				localReferencingOpcodes.Add(CodeEmission.POp.LocalRef);
+
+				parseableTypes = new HashSet:<string>();
+				parseableTypes.Add("Core.string");
+				parseableTypes.Add("Core.int");
+				parseableTypes.Add("Core.uint");
+				parseableTypes.Add("Core.float");
+				parseableTypes.Add("Core.short");
+				parseableTypes.Add("Core.ushort");
+				parseableTypes.Add("Core.byte");
+				parseableTypes.Add("Core.char");
+				parseableTypes.Add("Core.bool");
+
+				structuredTypeDeclTypes = new HashSet:<string>();
+				structuredTypeDeclTypes.Add("class");
+				structuredTypeDeclTypes.Add("struct");
+				structuredTypeDeclTypes.Add("enum");
+				structuredTypeDeclTypes.Add("interface");
+
+				securityLevels = new Dictionary:<string,uint>();
+				securityLevels["public"] = 1;
+				securityLevels["protected"] = 2;
+				securityLevels["private"] = 3;
+			}
+
+			public static function string enumType()
+			{
+				return "Core.uint";
+			}
+
+			public static function string varyingType()
+			{
+				return "Core.varying";
+			}
+
+			public static function string arrayIndexType()
+			{
+				return "Core.largeuint";
+			}
+
+			public static function string stringType()
+			{
+				return "Core.string";
+			}
+		}
+	}
+}

@@ -1,0 +1,60 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class Constant extends ValueExpression implements IEmittable
+		{
+			public enum Signal
+			{
+				Value,
+				Resource,
+				NullRef,
+				Enum,
+			}
+
+			public property string value;
+			public property string enumName;
+			public property Signal signal;
+
+			public function void Initialize(VType st, string cvalue, Signal signal)
+			{
+				local AccessMode accessMode = AccessMode.R;
+				if(signal == Signal.Resource && !st.IsObjectReference)
+					accessMode = AccessMode.P;
+
+				_vtams = new VTAMCollection(new VTAM
+					{
+						vType = st,
+						accessMode = accessMode
+					}
+				);
+				this.signal = signal;
+				this.value = cvalue;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				if(this.signal == Signal.NullRef)
+					ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Null } );
+				else if(this.signal == Signal.Resource)
+					ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Res, res1 = this.value } );
+				else
+				{
+					local VType vType = this.vtams[0].vType;
+					ces.AddConstantInstruction(vType.longName, this.value, this.signal);
+				}
+				ces.Push();
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "constant";
+			}
+		}
+	}
+}

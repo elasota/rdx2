@@ -1,0 +1,29 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class Disposal extends ValueExpression
+		{
+			public function void Initialize()
+			{
+				_vtams = new VTAMCollection(
+					new VTAM
+					{
+						accessMode = AccessMode.D,
+						vType = null
+					}
+				);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "disposal";
+			}
+		}
+	}
+}

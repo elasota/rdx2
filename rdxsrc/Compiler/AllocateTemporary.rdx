@@ -1,0 +1,31 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class AllocateTemporary extends ValueExpression implements IEmittable
+		{
+			public function void Initialize(const VTAMCollection vtams)
+			{
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				local LocalVariable temp = ces.AddTemporary(this._vtams[0].vType);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.LocalRef, int1 = temp.stackIndex as largeint } );
+				ces.Push(1, temp);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "allocated temporary";
+			}
+		}
+	}
+}

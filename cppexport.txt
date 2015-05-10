@@ -1,0 +1,36 @@
+Tags for the "cpp" attribute:
+
+
+name:
+	Accepts 1 parameter that is the type name.  If this is set, then the type uses the specified type name instead of using a type generated from its RDX type name.
+header:
+	Accepts 1 parameter, specifies the import header path.
+coreheader:
+	If set, indicates that the header is in the RDX core directory tree path rather than the export directory tree.
+builtin:
+	If set, does not export a struct/class reference.  Use this for types that alias built-in types like "int"
+alwaysconst:
+	If set, types references as "const"
+hascustomtrace:
+	If set, exports a MarkDependencies method that can be used to allow the garbage collector to trace
+hasfinalizer:
+	If set, exports a Finalize method that is called before the garbage collector releases the object
+hasonload:
+	If set, exports an OnLoad method that is called when an object of the type is deserialized.  The method can return false to indicate that loading either failed or is waiting for a dependency to be processed.
+hasserializer:
+	If set, exports serialization functions for the type.
+softdependencies:
+	Accepts multiple parameters, each being a fully-qualified type name followed by the C++ type specifier (i.e. "struct", "class").  This will forward-declare the types in the exported class header.
+rdxheaders:
+	Accepts multiple parameters, each being the path of a header from the RDX source directory to include
+relativeheaders:
+	Accepts multiple parameters, each being the path of a header to include relative to the class's local path
+systemheaders:
+	Accepts multiple parameters, each being the path of a header to include using the #include <...> format
+nativeproperties:
+	Accepts multiple parameters, each being a line in the NativeProperties structure for the type.
+nativechangesduringload:
+	If present, indicates that the native data of the object is unstable during load, so it should be skipped during duplication checks.
+nativesafetoserialize:
+	If present, indicates that the native data of the object is safe to serialize AND is in reverse byte order on opposite endian systems
+

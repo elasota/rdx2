@@ -1,0 +1,88 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+// The vast majority of VTAMs are singular.  This accelerates access in that case
+namespace RDX
+{
+	namespace Compiler
+	{
+		public struct VTAMCollection
+		{
+			public struct VTAMCollectionEnumerator
+			{
+				public property VTAMCollection _collection;
+				public property largeuint _nextIndex;
+
+				public function void Initialize(const VTAMCollection collection)
+				{
+					_collection = collection;
+				}
+
+				public const function bool HasNext()
+				{
+					return _nextIndex < _collection._length;
+				}
+
+				public function VTAM, largeuint GetNext()
+				{
+					local largeuint idx = _nextIndex;
+					local VTAM nextVTAM = _collection[_nextIndex];
+					_nextIndex++;
+					return nextVTAM, idx;
+				}
+			}
+
+			private property VTAM _singleVTAM;
+			private property VTAM const[] _vtams;
+			private property largeuint _length;
+
+			public function void Initialize()
+			{
+			}
+
+			public function void Initialize(const VTAM vtam)
+			{
+				_singleVTAM = vtam;
+				_length = 1;
+			}
+
+			public function void Initialize(List:<VTAM> vtams)
+			{
+				_length = vtams.Length;
+				if(_length == 1)
+					_singleVTAM = vtams[0];
+				else
+					_vtams = vtams.ToArray();
+			}
+
+			public function void Initialize(VTAM const[] vtams)
+			{
+				_length = vtams.Length;
+				if(_length == 1)
+					_singleVTAM = vtams[0];
+				else
+					_vtams = vtams;
+			}
+
+			public intercept const function largeuint Length()
+			{
+				return _length;
+			}
+
+			public const function VTAM __index(largeuint idx)
+			{
+				if(idx < 0 || idx >= _length)
+					throw IndexOutOfBoundsException.instance;
+				if(_vtams == null)
+					return _singleVTAM;
+				return _vtams[idx];
+			}
+
+			public const function VTAMCollectionEnumerator GetEnumerator()
+			{
+				return new VTAMCollectionEnumerator(this);
+			}
+		}
+	}
+}

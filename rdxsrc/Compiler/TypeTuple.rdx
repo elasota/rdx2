@@ -1,0 +1,49 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class TypeTuple extends CompilableObject
+		{
+			public property TypeReference const[] typeReferences;
+			public property string prettyName;
+
+			public function void Initialize(CompilerState cs, TypeReference const[] typeReferences)
+			{
+				this.typeReferences = typeReferences;
+				cs.uncompiled.Add(this);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local string longName = "(";
+				foreach(TypeReference tr in typeReferences)
+				{
+					if(!tr.isCompiled || tr.refType.longName == null)
+						return false;
+
+					if(longName != "(")
+						longName += ",";
+					longName += tr.refType.longName;
+				}
+				longName += ")";
+
+				this.prettyName = longName;
+				this._longName = "#TT-" + longName;
+				FinishCompile();
+
+				cs.gst[this.longName] = this;
+
+				return true;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "type tuple";
+			}
+		}
+	}
+}

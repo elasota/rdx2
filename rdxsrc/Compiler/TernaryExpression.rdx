@@ -1,0 +1,58 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class TernaryExpression extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression trueExprs;
+			public property IValueExpression falseExprs;
+			public property IValueExpression cond;
+			public property ASTNode incriminateNode;
+
+			public function void Initialize(IValueExpression trueExprs, IValueExpression falseExprs, IValueExpression cond, const VTAMCollection vtams, ASTNode incriminateNode)
+			{
+				this.trueExprs = trueExprs;
+				this.falseExprs = falseExprs;
+				this.cond = cond;
+				this._vtams = vtams;
+				this.incriminateNode = incriminateNode;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				// Push shells
+				local largeuint numValues = this._vtams.Length;
+				for(local largeuint i=0;i<numValues;i++)
+					CodeEmission.Emit.PushShellSpace(ces, this._vtams[i].vType);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.StartBarrier, int1 = numValues } );
+
+				local string lbl = ces.CreateLabel();
+				local string trueLabel = lbl + "_true";
+				local string falseLabel = lbl + "_false";
+
+				CodeEmission.Emit.EmitLogical(cs, ces, this.cond, trueLabel, falseLabel);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Label, str1 = trueLabel } );
+				CodeEmission.Emit.EmitValues(cs, ces, this.trueExprs, false);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Return, int1 = numValues } );
+				ces.Pop(numValues);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Label, str1 = falseLabel } );
+				CodeEmission.Emit.EmitValues(cs, ces, this.falseExprs, false);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Return, int1 = numValues } );
+				ces.Pop(numValues);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.EndBarrier } );
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "ternary expression";
+			}
+		}
+	}
+}

@@ -1,0 +1,278 @@
+TODO: Fix parameter offset stackactions!
+
+RDX midcode format:
+
+<byte> Opcode
+
+debuginfo
+    <codelocation>
+
+move
+	flags - Bitmask
+	source - Stack action or res ID, depending on flags
+	dest - Stack action
+	type - Type ID
+
+	Moves data from the source slot to the destination slot.  By default, source and destination are BP slots.
+
+	Flags:
+		0 - Dest PRV - Destination is a PRV slot.  If not set, destination is a BP slot.
+		1 - Dest deref - Destination is a runtime pointer
+		2 - Dest object - Destination is inside of an object
+		3 - Assignment - Overwrite a live destination.  If not set, destination is created by the move.
+		4 - Source PRV - Source is a PRV slot.  If not set, source is a BP slot.
+		5 - Source deref - Source is a runtime pointer.  (Note: It is legal to move a RTP, i.e. when loading a parameter)
+		6 - Source pop - Source is the top slot and is destroyed
+		7 - Source box - Source is a box handle instead of a slot.
+		8 - Source object - Source is inside of an object
+		9 - Source is ref - Source is a reference
+		10 - Source contains refs
+
+tovarying
+	dest - Destination stack action
+	type - Type ID
+	src - New stack action
+	Destroys runtime pointer in the top slot, replaces top slot with a varying with the specified type.
+
+pinl
+	dest - Slot index
+	loc - Location
+	Pushes a runtime pointer to a BP slot (pinl) or PRV slot (pinp).
+
+incrptr
+	location - Stack location
+	offset - Offset
+
+changeproperty
+	type - Type ID
+	prev - Property index
+	new - Property index
+	Converts a pointer to a property in the top slot to a pointer to a different property
+
+objproperty
+	property - Property index
+	type - Type ID
+	Destroys an object reference in the top slot and pushes a runtime pointer to a property index.  May throw exception.
+
+objproperty_notnull
+	property - Property index
+	type - Type ID
+	Destroys an object reference in the top slot and pushes a runtime pointer to a property index.  Never throws exception.
+	
+objproperty_notnull_persist
+	source - Slot index
+	property - Property index
+	type - Type ID
+	Creates an object reference in the top slot and pushes a runtime pointer to a property index.  Never throws exception.
+
+mod_incrprop
+	type - Type ID
+	property - Property index
+	Compounds the previous instruction with a property lookup.  Does not increase the instruction count.
+
+mod_createshell
+	type - Type ID
+	Creates a shell on the stack.  Does not increase the instruction count.
+
+immediate
+	value - VSV
+	dest - Target stack action
+	type - Type ID
+	Creates a POD immediate in the top slot.
+
+immediate_ptr
+	type - Type ID
+	dest - Target stack action
+	resource - Res ID
+	Creates a resource reference immediate in the top slot
+
+immediate_rtp
+	type - Type ID
+	dest - Target stack action
+	resource - Res ID
+	Creates a runtime pointer immediate in the top slot that points to a boxed resource
+
+arrayindex
+	indexsrc - Index source (highest index stackaction)
+	arraysrc - Array source stack action
+	dest - Pointer destination stack action
+	numdimensions - VSV
+	Destroys a stack of dimensions and an array reference from the top slots, pushes a runtime pointer in the top slot to the array contents.
+
+call
+	frameoffs - Call slot base address (not portable)
+	prvoffs - Call slot base address (not portable)
+	method - Res ID
+	parambase - Call slot base address
+	paramslotcount - VSV uint
+	rvslotcount - VSV uint
+	Calls a specified method
+
+calldelegatebp/calldelegateprv
+	frameoffs - Call slot base address (not portable)
+	prvoffs - Call slot base address (not portable)
+	methodsrc - Object source base address (not portable)
+	parambase - Call slot base address
+	paramslotcount - VSV uint
+	rvslotcount - VSV uint
+	methodsrcsa - Object source stack action
+	Calls the specified method from a local slot
+
+callvirtual
+	frameoffs - Call slot base address (not portable)
+	prvoffs - Call slot base address (not portable)
+	objsrc - Object source address (not portable)
+	vstidx - VST index
+	slotbase - Call slot base address
+	paramslotcount - VSV uint
+	rvslotcount - VSV uint
+	objsrcsa - Object source stack action
+	Calls the specified method from one of the popped values.  thisoffset is the number of slots from the top, starting at 0 for the top itself.
+
+callinterface
+	frameoffs - Call slot base address (not portable)
+	prvoffs - Call slot base address (not portable)
+	objsrc - Object source address (not portable)
+	vstidx - VST index
+	slotbase - Call slot base address
+	paramslotcount - VSV uint
+	rvslotcount - VSV uint
+	objsrcsa - Object source stack action
+	interface - Interface
+	method - Method
+	Calls the specified method from one of the popped values.  The popped value is also converted from a TracedIRef into a TracedRTRef.  thisoffset is the number of slots from the top, starting at 0 for the top itself.
+
+verifynotnull
+	slot - Slot index
+	instroffset - VSV uint
+	Verifies that a slot is not null.  If it is null, advances IP by instroffset and throws a NullReferenceException.
+
+zero
+	location - Stack action location
+	type - Type ID
+	Zero-fills a new top slot.
+
+newinstance
+	loc - Destination stack action
+	type - Type
+	dimsrc - Dimension source stack action
+	numdimensions - Number of dimensions
+
+exit
+	Exits the current frame
+
+jump
+	instrnum - Instr
+	Jumps to the specified instruction
+
+jtrue
+	instrnum - Instr
+	src - Source stack action
+	Pops the top slot value, and if it is true, jumps to instrnum
+
+jfalse
+	instrnum - Instr
+	src - Source stack action
+	Pops the top slot value, and if it is false, jumps to instrnum
+
+jinherits
+	instrnum - Instr
+	src - Source stack action
+	type - Resource ID
+	Pops the top slot value, and if it inherits from the specified type, jumps to instrnum
+
+tick
+	Decrements the timeout counter, suspends the thread if timeout is hit
+
+assertenum
+	src - Source stack action
+	type - Resource ID
+	Pops the top slot value, throws IncompatibleConversionException if the type can not be converted to the specified enum
+
+assertinherits
+	type - Resource ID
+	Pops the top slot value, throws IncompatibleConversionException if the type can not be converted to the specified reference type
+
+jeq_f
+	instrnum - Instr
+	src1 - Source 1 stack action
+	src2 - Source 2 stack action
+	type - Type ID
+	Pops the top 2 BP slots values, if equal then jumps to the specified instruction
+
+jeq_p
+	instrnum - Instr
+	type - Type ID
+	Pops the top 2 BP slots pointers, if equal then jumps to the specified instruction
+
+jne_f
+	instrnum - Instr
+	type - Type ID
+	Pops the top 2 BP slots values, if not equal then jumps to the specified instruction
+
+jne_p
+	instrnum - Instr
+	type - Type ID
+	Pops the top 2 BP slots pointers, if not equal then jumps to the specified instruction
+
+xnullref
+	Throws a NullReferenceException
+
+catch
+	Throws an InvalidOperationException
+
+fatal
+	Throws an InvalidOperationException
+
+throw
+	Pops an exception from the top BP slot and throws it
+
+flushstack
+	Flushes all state to the stack
+
+switch
+	src - Value location
+	arrayref - Res ID
+	failcount - VSV uint
+	type - Type ID of source value
+	Pops a value from the top BP slot, searches for a hit.  If none, increments instruction counter by failcount
+
+switch_ptr
+	src - Value location
+	arrayref - Res ID
+	failcount - VSV uint
+	type - Type ID of source value
+	Pops a pointer from the top BP slot, searches for a hit.  If none, increments instruction counter by failcount
+
+iteratearray
+	arraylocal - BP slot
+	indexlocal - BP slot
+	destlocal - BP slot
+	exit - VSV uint
+	type - Type ID of subscript
+	subindexlocal - BP slot
+	subindexcount - VSV uint
+	If indexlocal is within bounds of the array in the target BP slot, increments it and copies the contents to destlocal, otherwise jumps to exit
+
+iteratearray
+	arraylocal - BP slot
+	indexlocal - BP slot
+	destlocal - BP slot
+	exit - VSV uint
+	type - Type ID of subscript
+	subindexlocal - BP slot
+	subindexcount - VSV uint
+	If indexlocal is within bounds of the array in the target BP slot, increments it and subindexes and copies the contents to destlocal, otherwise jumps to exit
+
+addslotinit
+	type - Type ID of slot
+	Adds a new slot of a specified type
+
+addslotempty
+	type - Type ID of slot
+	Adds a new empty slot of a specified type
+
+intrinsic
+	params - Param slot
+	p1 - Intrinsic param 1
+	p2 - Intrinsic param 2

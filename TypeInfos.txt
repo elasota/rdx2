@@ -1,0 +1,10 @@
+Type information in RDX generally utilizes a template called rdxSAutoTypeInfo.  The use of this structure creates type interfaces that support the handling of object lifecycles and debugger inspection through the C++ API.  However, this presents some complications when used with the plugin API: It is possible for plugin native calls to create types that are valid outside the lifetime of the plugin, such as creating arrays.
+
+To avoid this problem, plugins that create typed arrays must use the CreateArrayTypeInfo and CreateBoxTypeInfo methods of rdxIObjectManager.
+
+If the RDX_ALLOW_PLUGIN_TYPEINFO define is enabled, then the typeinfo returned will use type info created by the responsible plugin and the application will bear the responsibility of ensuring that the typeinfos are not being used when the plugin is still loaded.
+
+If the define is not set:
+- For arrays of reference types, CreateArrayTypeInfo will return the typeinfo of rdxCArray<rdxTracedRTRef(rdxCObject)>
+- For arrays of value types, CreateArrayTypeInfo will return the typeinfo of rdxCArrayContainer
+- For boxed objects, CreateBoxTypeInfo will return the typeinfo of rdxCStructContainer.

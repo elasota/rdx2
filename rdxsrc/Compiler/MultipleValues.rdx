@@ -1,0 +1,35 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class MultipleValues extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression const[] expressions;
+
+			public function void Initialize(IValueExpression const[] expressions, const VTAMCollection vtams)
+			{
+				this.expressions = expressions;
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				foreach(IValueExpression subExpr in this.expressions)
+				{
+					Utility.Assert(!(subExpr is MultipleValues));
+					CodeEmission.Emit.EmitValues(cs, ces, subExpr, allowLocals);
+				}
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "multiple values";
+			}
+		}
+	}
+}

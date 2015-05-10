@@ -1,0 +1,50 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		// Imported namespaces are a shallow check
+		public class ImportedNamespace extends Scope
+		{
+			private property CompilerState _cs;
+			private property TokenNode const[] _path;
+			private property Namespace _ns;
+
+			public function void Initialize(CompilerState cs, TokenNode const[] path)
+			{
+				_cs = cs;
+				_path = path;
+			}
+
+			public virtual function ICObject Lookup(string symbol, ASTNode incriminate)
+			{
+				if(_ns == null)
+				{
+					local Namespace ns = _cs.globalNamespace;
+					foreach(TokenNode tk in _path)
+					{
+						local string pathStr = tk.token.str;
+						if(!ns.symbols.ContainsKey(pathStr))
+							Utility.CError(incriminate, ErrorCode.CouldNotResolveNamespace, pathStr);
+
+						local Object subNS = ns.symbols[pathStr];
+						if(!(subNS is Namespace))
+							Utility.CError(incriminate, ErrorCode.CouldNotResolveNamespace, pathStr);
+
+						ns = subNS as Namespace;
+					}
+					_path = null;
+					_ns = ns;
+				}
+
+				if(_ns.symbols.ContainsKey(symbol))
+					_ns.symbols[symbol];
+				return null;
+			}
+		}
+	}
+}

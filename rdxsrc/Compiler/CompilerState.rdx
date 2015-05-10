@@ -1,0 +1,2787 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CompilerState
+		{
+			private property CompilerConstants _constants;
+			private property CompilerOptions _copts;
+
+			public property bool compilingTypes;
+			public property Namespace globalNamespace;
+			public property List:<DefaultInstance> defaultInstances;
+			public property Dictionary:<string, ICObject> gst;
+			public property List:<ICompilable> uncompiled;
+			public property List:<MethodObject> uncompiledCode;
+			public property largeuint instancedTemplateLimit;
+
+			public function void Initialize(notnull CompilerOptions copts)
+			{
+				globalNamespace = new Namespace(null);
+				uncompiled = new List:<ICompilable>();
+				uncompiledCode = new List:<MethodObject>();
+				defaultInstances = new List:<DefaultInstance>();
+				gst = new Dictionary:<string, ICObject>();
+				_constants = new CompilerConstants();
+				instancedTemplateLimit = copts.templateLimit;
+				_copts = copts;
+			}
+
+			public static function IValueExpression ConvertExpression(ASTNode incriminate, IValueExpression cnode, const VTAMCollection targetVTAMs)
+			{
+				return ConvertExpression(incriminate, cnode, targetVTAMs, false, false);
+			}
+
+			public static function IValueExpression ConvertExpression(ASTNode incriminate, IValueExpression cnode, const VTAMCollection targetVTAMs, bool allowPoly, bool allowBH)
+			{
+				if(targetVTAMs.Length == 0 || cnode.vtams[0].accessMode == AccessMode.I)
+					Utility.CError(incriminate, ErrorCode.ExpectedValueExpression, cnode.printableName);
+
+				Utility.Assert(targetVTAMs.Length == cnode.vtams.Length);
+
+				if(cnode is Constant && (cnode as Constant).signal == Constant.Signal.Value)
+				{
+					// Coercible const fold
+					if(cnode.vtams[0].vType != targetVTAMs[0].vType)
+					{
+						local string coerceName = cnode.vtams[0].vType.longName + "/methods/#coerce(" + targetVTAMs[0].vType.longName + ")";
+						local bool foldExists = NativeServices.ConstFoldExists(coerceName);
+			
+						if(foldExists)
+						{
+							local string newValue = NativeServices.ConstFold(coerceName, new string[] { (cnode as Constant).value } );
+							if(newValue == null)
+								Utility.CWarning(incriminate, WarningCode.CouldNotFoldConstant);
+							else
+								cnode = new Constant(targetVTAMs[0].vType, newValue, Constant.Signal.Value);
+						}
+					}
+				}
+			
+				if(cnode is MultipleValues)
+				{
+					// Recurse into subexpressions instead
+					local MVTemplate newExpressions = new MVTemplate();
+
+					foreach(IValueExpression expr in (cnode as MultipleValues).expressions)
+					{
+						local List:<VTAM> sliceVTAMs = new List:<VTAM>();
+
+						foreach(VTAM vtam in expr.vtams)
+							sliceVTAMs.Add(vtam);
+
+						local IValueExpression newExpr = ConvertExpression(incriminate, expr, new VTAMCollection(sliceVTAMs), allowPoly, allowBH);
+						Utility.AuditAccessModes(newExpr.vtams);
+						newExpressions.Append(newExpr);
+					}
+
+					return Utility.FlattenMV(newExpressions.ToMV());
+				}
+			
+				local bool allAcceptable = true;
+				foreach(VTAM vtam, largeuint idx in cnode.vtams)
+				{
+					local bool amsCompatible = true;
+					local AccessMode tam = targetVTAMs[idx].accessMode;
+					local AccessMode cnodeAM = vtam.accessMode;
+
+					if(tam == AccessMode.AnyP)
+						amsCompatible = (cnodeAM == AccessMode.P || cnodeAM == AccessMode.CP);
+					else if(tam == AccessMode.Any)
+						amsCompatible = true;
+					else
+						amsCompatible = (cnodeAM == tam);
+					
+					if(!amsCompatible || vtam.vType != targetVTAMs[idx].vType)
+					{
+						allAcceptable = false;
+						break;
+					}
+				}
+
+				if(allAcceptable)
+					return cnode;	// Nothing to do
+
+				local List:<VTAM> outVTAMs = new List:<VTAM>();
+
+				local bool dismantled = false;
+
+				// Coerces will cause the coerced value to R of the expected type and all non-coerced values after to L from temp stores
+				foreach(VTAM targetVTAM, largeuint idx in targetVTAMs)
+				{
+					local AccessMode outAM = cnode.vtams[idx].accessMode;
+					local VType vt = targetVTAM.vType;
+					local bool isCoerce = false;
+					local MatchLevel matchability = Utility.CastMatchability(cnode.vtams[idx].vType, vt, allowBH);
+
+					if(cnode.vtams[idx].accessMode == AccessMode.CP && targetVTAM.accessMode == AccessMode.P)
+						Utility.CError(incriminate, ErrorCode.CanNotStripConst);
+
+					switch(matchability)
+					{
+					case(MatchLevel.Lossless, MatchLevel.Lossy, MatchLevel.Polymorphic):
+						{
+							outAM = AccessMode.R;
+							dismantled = true;
+							if(!allowPoly && matchability == MatchLevel.Polymorphic)
+								Utility.CError(incriminate, ErrorCode.PolyNotAllowed, cnode.vtams[idx].vType.prettyName, vt.prettyName);
+						}
+					case(MatchLevel.Varying):
+						{
+							outAM = AccessMode.V;
+							dismantled = true;
+						}
+					case(MatchLevel.Unmatchable):
+						{
+							Utility.CError(incriminate, ErrorCode.CouldNotConvert, cnode.vtams[idx].vType.prettyName, vt.prettyName);
+						}
+					case(default):
+						{
+							// Anything after the dismantled value winds up as L
+							if(dismantled)
+								outAM = AccessMode.L;
+						}
+					}
+
+					if(targetVTAM.accessMode == AccessMode.AnyP)
+					{
+						if(outAM == AccessMode.L)
+							outAM = AccessMode.P;
+					}
+					else if(targetVTAM.accessMode != AccessMode.Any)
+						outAM = targetVTAM.accessMode;
+
+					Utility.Assert(outAM != AccessMode.Any);
+
+					outVTAMs.Add(new VTAM { accessMode = outAM, vType = vt });
+				}
+
+				local VTAMCollection outVTAMsCollection = new VTAMCollection(outVTAMs);
+
+				Utility.AuditAccessModes(outVTAMsCollection);
+				return new ConvertedExpression(cnode, outVTAMsCollection);
+			}
+
+			public static function IValueExpression AdjustValueCount(IValueExpression cnode, ASTNode incriminate, largeuint goalCount)
+			{
+				return AdjustValueCount(cnode, incriminate, goalCount, false);
+			}
+
+			public static function IValueExpression AdjustValueCount(IValueExpression cnode, ASTNode incriminate, largeuint goalCount, bool noTruncationWarning)
+			{
+				local VTAMCollection vtams = cnode.vtams;
+				if(vtams.Length < goalCount)
+					Utility.CError(incriminate, ErrorCode.TooFewValues, goalCount as string, cnode.vtams.Length as string);
+
+				if(cnode.vtams.Length == goalCount)
+					return cnode;	// Nothing to do
+
+				local VTAM[] newVTAMs = new VTAM[goalCount];
+				for(local largeuint i=0;i<goalCount;i++)
+					newVTAMs[i] = vtams[i];
+
+				if(!noTruncationWarning && cnode is MultipleValues)
+				{
+					local MultipleValues mv = cnode as MultipleValues;
+					local largeuint firstExprIndex = 0;
+					foreach(IValueExpression expr, largeuint idx in mv.expressions)
+					{
+						if(firstExprIndex > goalCount)
+						{
+							Utility.CWarning(incriminate, WarningCode.TruncatedValue);
+							break;
+						}
+						firstExprIndex += mv.vtams.Length;
+					}
+				}
+
+				return new ValueCountAdjuster(cnode, new VTAMCollection(newVTAMs));
+			}
+
+			public function IValueExpression CompiledExprToBoolean(ASTNode incriminate, IValueExpression expr)
+			{
+				if(!gst.ContainsKey("Core.bool"))
+					throw new UnresolvedExpressionSignal();
+
+				local VType boolType = (gst["Core.bool"] as VType);
+				expr = AdjustValueCount(expr, incriminate, 1);
+				local VTAMCollection vtams = new VTAMCollection(new VTAM { vType = boolType, accessMode = AccessMode.R });
+				expr = ConvertExpression(incriminate, expr, vtams);
+				return expr;
+			}
+
+			public function IValueExpression OperationToMethod(ExpressionNode node, Scope scope)
+			{
+				local IValueExpression leftOperand = AdjustValueCount(CompileExpression(node.operands[0], scope, true).ToValues(node.operands[0]), node, 1);
+				local string operator;
+
+				if(!gst.ContainsKey("Core.bool"))
+					throw new UnresolvedExpressionSignal();
+				local StructuredTypeObject boolType = gst["Core.bool"] as StructuredTypeObject;
+
+				if(node is BinaryOperatorNode)
+				{
+					local BinaryOperatorNode binNode = node as BinaryOperatorNode;
+
+					if(binNode.operator.token.str == "&&" || binNode.operator.token.str == "||")
+					{
+						local IValueExpression rightOperand = AdjustValueCount(CompileExpression(node.operands[1], scope, true).ToValues(node.operands[1]), node, 1);
+
+						local VTAMCollection boolRVTAMs = new VTAMCollection(new VTAM { vType = boolType, accessMode = AccessMode.R });
+
+						local IValueExpression leftExpr = ConvertExpression(node, leftOperand, boolRVTAMs);
+						local IValueExpression rightExpr = ConvertExpression(node, rightOperand, boolRVTAMs);
+			
+						local LogicalBinaryOperation.Operator op;
+						if(binNode.operator.token.str == "&&")
+							op = LogicalBinaryOperation.Operator.And;
+						else if(binNode.operator.token.str == "||")
+							op = LogicalBinaryOperation.Operator.Or;
+						
+						// Fold early-outs
+						if(leftExpr is Constant && (leftExpr as Constant).signal == Constant.Signal.Value && leftExpr.vtams[0].vType == boolType)
+						{
+							local string leftExprValue = (leftExpr as Constant).value;
+
+							if(leftExprValue == "true")
+							{
+								if(op == LogicalBinaryOperation.Operator.And)
+									return rightExpr;
+								else if(op == LogicalBinaryOperation.Operator.Or)
+									return leftExpr;
+								else
+									Utility.Assert(false);
+							}
+							else
+							{
+								Utility.Assert(leftExprValue == "false");
+								if(op == LogicalBinaryOperation.Operator.And)
+									return leftExpr;
+								else if(op == LogicalBinaryOperation.Operator.Or)
+									return rightExpr;
+								else
+									Utility.Assert(false);
+							}
+						}
+
+						return new LogicalBinaryOperation(op, boolRVTAMs, leftExpr, rightExpr);
+					}
+
+					operator = _constants.binaryOperatorMethods[binNode.operator.token.str];
+				}
+				else
+				{
+					Utility.Assert(node is UnaryOperatorNode);
+
+					local UnaryOperatorNode unaryNode = node as UnaryOperatorNode;
+					if(unaryNode.operator.token.str == "!")
+					{
+						local VTAMCollection boolRVTAMs = new VTAMCollection(new VTAM { vType = boolType, accessMode = AccessMode.R });
+
+						local IValueExpression expr = ConvertExpression(node, leftOperand, boolRVTAMs);
+
+						if(expr is Constant && (expr as Constant).signal == Constant.Signal.Value && expr.vtams[0].vType == boolType)
+						{
+							local string exprValue = (expr as Constant).value;
+							if(exprValue == "true")
+								return new Constant(boolType, "false", Constant.Signal.Value);
+							else if(exprValue == "false")
+								return new Constant(boolType, "true", Constant.Signal.Value);
+							else
+								Utility.Assert(false);
+						}
+
+						return new LogicalNotOperation(boolRVTAMs, expr);
+					}
+
+					operator = _constants.unaryOperatorMethods[unaryNode.operator.token.str];
+				}
+
+				Utility.Assert(operator != null);
+
+				local ICObject mg = null;
+				if(leftOperand.vtams[0].vType is StructuredTypeObject)
+				{
+					local Namespace ns = (leftOperand.vtams[0].vType as StructuredTypeObject).ns;
+					if(ns.symbols.ContainsKey(operator))
+						mg = ns.symbols[operator];
+				}
+
+				if(mg == null)
+				{
+					if(operator == "__eq" || operator == "__ne")
+					{
+						local AccessMode desiredAccessMode;
+						if(leftOperand.vtams[0].vType.IsRefStruct)
+							desiredAccessMode = AccessMode.CP;
+						else
+							desiredAccessMode = AccessMode.R;
+
+						local IValueExpression rightOperand = AdjustValueCount(CompileExpression(node.operands[1], scope, true).ToValues(node.operands[1]), node, 1);
+
+						local VTAMCollection leftTargetVTAMs = new VTAMCollection(new VTAM { vType = leftOperand.vtams[0].vType, accessMode = desiredAccessMode });
+						leftOperand = ConvertExpression(node, leftOperand, leftTargetVTAMs);
+
+						local MatchLevel matchability = Utility.CastMatchability(leftOperand.vtams[0].vType, rightOperand.vtams[0].vType, false);
+
+						if(matchability == MatchLevel.Direct || matchability == MatchLevel.Polymorphic)
+						{
+							// Sufficiently similar
+							local VTAMCollection rightTargetVTAMs = new VTAMCollection(new VTAM { vType = rightOperand.vtams[0].vType, accessMode = desiredAccessMode });
+							rightOperand = ConvertExpression(node, rightOperand, rightTargetVTAMs);
+						}
+						else
+						{
+							// Requires a cast to the left side
+							rightOperand = ConvertExpression(node, rightOperand, leftTargetVTAMs);
+						}
+
+						// Fold constants
+						if(leftOperand is Constant && rightOperand is Constant)
+						{
+							local Constant leftConst = leftOperand as Constant;
+							local Constant rightConst = rightOperand as Constant;
+							if(leftConst.signal == Constant.Signal.Value && rightConst.signal == Constant.Signal.Value)
+							{
+								local string constv;
+								if(leftConst.value == rightConst.value)
+									constv = (operator == "__eq") ? "true" : "false";
+								else
+									constv = (operator == "__ne") ? "true" : "false";
+
+								return new Constant(boolType, constv, Constant.Signal.Value);
+							}
+						}
+
+						local VTAMCollection boolRVTAMs = new VTAMCollection(new VTAM { vType = boolType, accessMode = AccessMode.R });
+
+						return new EqualityCompareOperation(leftOperand, rightOperand, boolRVTAMs, operator);
+					}
+
+					Utility.CError(node, ErrorCode.CouldNotResolveOperator, operator);
+				}
+				if(!(mg is MethodGroup))
+					Utility.CError(node, ErrorCode.OperatorNotMethod, operator);
+
+				local ObjectMethod objMethod = new ObjectMethod(leftOperand, mg as MethodGroup);
+
+				local MultipleValues parameters;
+
+				if(node is BinaryOperatorNode)
+				{
+					local ASTNode rightNode = (node as BinaryOperatorNode).operands[1];
+					local IValueExpression pbase = CompileExpression(rightNode, scope, true).ToValues(rightNode);
+					local IValueExpression padjusted = AdjustValueCount(pbase, node, 1);
+
+					parameters = Utility.SingleExpressionToList(padjusted);
+				}
+				else if(node is UnaryOperatorNode)
+					parameters = Utility.EmptyExpressionList();
+				else
+					Utility.Assert(false);
+			
+				return MatchMethodCall(objMethod, parameters, node, false, null);
+			}
+
+			public function IValueExpression MatchMethodCall(ICObject left, MultipleValues parameters, ASTNode incriminate, bool isExplicit, ICallable dlg)
+			{
+				local IContainsOverloads mg;
+				local uint thisIndex;
+				local bool hasThis;
+				local MultipleValues finalExpressions;
+				local IValueExpression delegateExpr;
+
+				if(dlg != null)
+				{
+					mg = new DelegateMethodGroup(dlg.name.token.str);
+					mg.overloads.Add(dlg);
+
+					delegateExpr = left as IValueExpression;
+			
+					if(dlg is BoundDelegateTypeObject)
+					{
+						// FIXME: thisIndex can't be set because later code assumes it'll be used for an object invoke
+						finalExpressions = Utility.InsertThisExpression(parameters, 1, delegateExpr, incriminate);
+						delegateExpr = null;
+					}
+					else
+						finalExpressions = parameters;
+				}
+				else if(left is ObjectMethod)
+				{
+					local MethodGroup actualMG = (left as ObjectMethod).methodGroup;
+					mg = actualMG;
+
+					hasThis = true;
+					thisIndex = 1;
+					if(actualMG.isIntercept && parameters.expressions.Length > 0)
+						thisIndex = 2;
+					if(actualMG.isArrayIntercept)
+						thisIndex = 2;
+
+					finalExpressions = Utility.InsertThisExpression(parameters, thisIndex, (left as ObjectMethod).object, incriminate);
+				}
+				else if(left is MethodGroup)
+				{
+					local MethodGroup actualMG = left as MethodGroup;
+					mg = actualMG;
+					finalExpressions = parameters;
+			
+					if(!actualMG.isStatic)
+						Utility.CError(incriminate, ErrorCode.UnboundInstanceCall);
+				}
+				else
+					Utility.Assert(false);
+
+				Utility.Assert(mg is MethodGroup || mg is DelegateMethodGroup);
+
+				local struct MatchDetermination
+				{
+					public property bool collided;
+					public property bool canMatch;
+					public property ICallable match;
+				};
+
+				local Core.RDX.Enumerant.UnderlyingType levelCount = MatchLevel.Count as Core.RDX.Enumerant.UnderlyingType;
+				local MatchDetermination[] matches = new MatchDetermination[levelCount];
+				matches[MatchLevel.Count as Core.RDX.Enumerant.UnderlyingType].canMatch = true;
+				matches[MatchLevel.Direct as Core.RDX.Enumerant.UnderlyingType].canMatch = true;
+				matches[MatchLevel.Lossless as Core.RDX.Enumerant.UnderlyingType].canMatch = true;
+				matches[MatchLevel.Lossy as Core.RDX.Enumerant.UnderlyingType].canMatch = true;
+				matches[MatchLevel.Varying as Core.RDX.Enumerant.UnderlyingType].canMatch = true;
+
+				local VType thisVT;
+				foreach(ICallable method in mg.overloads)
+				{
+					local Core.RDX.Enumerant.UnderlyingType matchability = Utility.MethodMatchability(finalExpressions.vtams, method, hasThis, thisIndex);
+					if(matches[matchability].canMatch && matches[matchability].match == null)
+						matches[matchability].match = method;
+					else
+						matches[matchability].collided = true;
+				}
+
+				// Find a match
+				foreach(MatchDetermination mdet, largeuint matchLevel in matches)
+				{
+					if(mdet.canMatch && mdet.match != null)
+					{
+						if(mdet.collided)
+							Utility.CError(incriminate, ErrorCode.AmbiguousMethodCall);
+						if(matchLevel == (MatchLevel.Lossy as Core.RDX.Enumerant.UnderlyingType))
+							Utility.CWarning(incriminate, WarningCode.LossyConversion);
+
+						local ICallable method = mdet.match;
+
+						local VTAM[] returnVTAMs = new VTAM[method.returnTypes.typeReferences.Length];
+
+						foreach(TypeReference rt, largeuint idx in method.returnTypes.typeReferences)
+						{
+							local VType vType = rt.refType;
+
+							if(vType.IsRefStruct)
+								returnVTAMs[idx] = new VTAM { accessMode = AccessMode.CP, vType = vType };
+							else
+								returnVTAMs[idx] = new VTAM { accessMode = AccessMode.R, vType = vType };
+						}
+
+						local VTAM[] parameterVTAMs = new VTAM[method.actualParameterList.parameters.Length];
+
+						foreach(MethodParameterObject param, largeuint idx in method.actualParameterList.parameters)
+						{
+							local VType pt = param.type.refType;
+							local AccessMode am;
+
+							if(pt.longName == CompilerConstants.varyingType())
+								am = AccessMode.V;
+							else if(pt.IsRefStruct)
+							{
+								if(param.isConst)
+									am = AccessMode.CP;
+								else
+									am = AccessMode.P;
+							}
+							else
+								am = AccessMode.R;
+
+							parameterVTAMs[idx] = new VTAM { accessMode = am, vType = pt };
+						}
+
+						// See if null was passed to any notnull parameter
+						{
+							local largeuint startParameter = 0;
+							foreach(IValueExpression expr in finalExpressions.expressions)
+							{
+								if(expr is Constant && expr.vtams[0].vType.longName == "Core.nullreference" && method.actualParameterList.parameters[startParameter].isNotNull)
+									Utility.CWarning(incriminate, WarningCode.NullPassedToNotNull);
+
+								startParameter = startParameter + expr.vtams.Length;
+							}
+						}
+
+						local MultipleValues convertedParameters = ConvertExpression(incriminate, finalExpressions, new VTAMCollection(parameterVTAMs)) as MultipleValues;
+
+						local bool canFold = true;
+
+						foreach(IValueExpression p in convertedParameters.expressions)
+						{
+							if(!(p is Constant) || (p as Constant).signal != Constant.Signal.Value)
+							{
+								canFold = false;
+								break;
+							}
+						}
+
+						if(canFold)
+						{
+							local string mName = (method as MethodObject).longName;
+
+							local bool foldExists = NativeServices.ConstFoldExists(mName);
+							if(foldExists)
+							{
+								local VType returnType = returnVTAMs[0].vType;
+								local string[] parameterValues = new string[convertedParameters.expressions.Length];
+
+								foreach(IValueExpression expr, largeuint i in convertedParameters.expressions)
+									parameterValues[i] = (expr as Constant).value;
+
+								local string newValue = NativeServices.ConstFold(mName, parameterValues);
+
+								if(newValue == null)
+									Utility.CWarning(incriminate, WarningCode.CouldNotFoldConstant);
+								else
+									return new Constant(returnVTAMs[0].vType, newValue, Constant.Signal.Value);
+							}
+						}
+
+						if(isExplicit && method.isAbstract)
+							Utility.CError(incriminate, ErrorCode.AbstractMethodInvokedExplicitly);
+
+						return new MethodCall(method, isExplicit, delegateExpr, convertedParameters, new VTAMCollection(returnVTAMs));
+					}
+				}
+				Utility.CError(incriminate, ErrorCode.CouldNotMatchOverload, mg.name);
+				return null;
+			}
+
+			public function IValueExpression CompileIndexExpression(IndexNode node, Scope scope, bool discharging)
+			{
+				// 2 scenarios:
+				// - Array indexes are P-access values
+				// - Index operations on non-arrays are __index when discharging and __setindex when not discharging
+
+				local IValueExpression leftExpr = AdjustValueCount(CompileExpression(node.operands[0], scope, true).ToValues(node.operands[0]), node, 1);
+			
+				local VType leftVType = leftExpr.vtams[0].vType;
+				local MultipleValues indexes = CompileExpressionList(node.operands[1] as ExpressionListNode, scope, true);
+
+				if(leftVType is ArrayOfTypeObject)
+				{
+					local ArrayOfTypeObject leftAOT = leftVType as ArrayOfTypeObject;
+					if(!gst.ContainsKey(CompilerConstants.arrayIndexType()))
+						throw new UnresolvedExpressionSignal();
+
+					local StructuredTypeObject arrayIndexST = gst[CompilerConstants.arrayIndexType()] as StructuredTypeObject;
+
+					if(indexes.vtams.Length != leftAOT.dimensions)
+						Utility.CError(node, ErrorCode.ArrayIndexCountMismatch, leftAOT.dimensions as string, indexes.vtams.Length as string);
+
+					local VTAMCollection leftVT_R = new VTAMCollection(new VTAM { vType = leftVType, accessMode = AccessMode.R });
+					local IValueExpression rvLeft = ConvertExpression(node, leftExpr, leftVT_R);
+
+					// Convert all indexes to the array index type and as values
+					local VTAM[] arrayIndexVTAMs = new VTAM[indexes.expressions.Length];
+					foreach(IValueExpression expr, largeuint idx in indexes.expressions)
+						arrayIndexVTAMs[idx] = new VTAM { vType = arrayIndexST, accessMode = AccessMode.R };
+
+					local AccessMode resultAM = leftAOT.isConst ? AccessMode.CP : AccessMode.P;
+
+					return new ArrayIndex(rvLeft, ConvertExpression(node, indexes, new VTAMCollection(arrayIndexVTAMs)),
+						new VTAMCollection(new VTAM { vType = leftAOT.containedType, accessMode = resultAM }) );
+				}
+				else if(leftVType is StructuredTypeObject)
+				{
+					local StructuredTypeObject leftST = leftVType as StructuredTypeObject;
+					if(!leftST.isCompiled || !leftST.finalizer.isCompiled)
+						throw new UnresolvedExpressionSignal();
+
+					local AccessMode targetAccessMode;
+					if(leftST.IsRefStruct)
+						targetAccessMode = AccessMode.AnyP;
+					else
+						targetAccessMode = AccessMode.R;
+
+					local IValueExpression pvLeft = ConvertExpression(node, AdjustValueCount(leftExpr, node, 1),
+						new VTAMCollection(new VTAM { vType = leftVType, accessMode = targetAccessMode }));
+
+					if(discharging)
+					{
+						if(!leftST.ns.symbols.ContainsKey("__index"))
+							Utility.CError(node, ErrorCode.CouldNotFindIndexMethod);
+
+						local Object mg = leftST.ns.symbols["__index"];
+						if(!(mg is MethodGroup))
+							Utility.CError(node, ErrorCode.IndexMemberNotMethod);
+
+						local ObjectMethod objMethod = new ObjectMethod {
+							object = pvLeft,
+							methodGroup = mg as MethodGroup,
+						};
+
+						return MatchMethodCall(objMethod, indexes, node, false, null);
+					}
+					else
+					{
+						if(targetAccessMode == AccessMode.AnyP && leftExpr.vtams[0].accessMode == AccessMode.R)
+							Utility.CError(node, ErrorCode.IndexedObjectWasValue);
+
+						if(!leftST.ns.symbols.ContainsKey("__setindex"))
+							Utility.CError(node, ErrorCode.CouldNotFindIndexMethod);
+
+						local Object mg = leftST.ns.symbols["__setindex"];
+						if(!(mg is MethodGroup))
+							Utility.CError(node, ErrorCode.SetIndexMemberNotMethod);
+
+						local ObjectMethod objMethod = new ObjectMethod(pvLeft, mg as MethodGroup);
+
+						return new SetIndexCall(objMethod, indexes, new VTAMCollection(new VTAM { accessMode = AccessMode.A, vType = VType.SetIndexType }));
+					}
+				}
+				else
+					Utility.Assert(false);
+				return null;
+			}
+
+			public function IValueExpression CompileInitializeInstance(IValueExpression expr, Scope scope, ExpressionListNode parametersNode, ASTNode incriminate)
+			{
+				local MultipleValues parameters;
+
+				if(parametersNode != null)
+					parameters = CompileExpressionList(parametersNode, scope, true);
+				else
+					parameters = Utility.EmptyExpressionList();
+
+				local StructuredTypeObject leftVT = expr.vtams[0].vType as StructuredTypeObject;
+				local MethodGroup initMG;
+
+				if(leftVT.ns.symbols.ContainsKey("Initialize"))
+				{
+					local Object initObj = leftVT.ns.symbols["Initialize"];
+					if(initObj is MethodGroup)
+						initMG = initObj as MethodGroup;
+				}
+
+				if(initMG == null)
+				{
+					if(parametersNode == null || parametersNode.expressions.Length == 0)
+					{
+						// Just don't bother initializing
+						if(leftVT.IsRefStruct)
+							return new AllocateTemporary(new VTAMCollection(new VTAM { vType = leftVT, accessMode = AccessMode.L }));
+						else
+							return expr;
+					}
+
+					Utility.CError(incriminate, ErrorCode.TypeDoesNotHaveInitialize);
+				}
+
+				local IValueExpression cloneExpr;
+				local AccessMode recoveryAM;
+
+				local IValueExpression baseExpr;
+				if(leftVT.IsObjectReference)
+				{
+					recoveryAM = AccessMode.R;
+					baseExpr = expr;
+				}
+				else if(leftVT.IsRefStruct)
+				{
+					recoveryAM = AccessMode.L;
+					baseExpr = new AllocateTemporary(new VTAMCollection(new VTAM { vType = leftVT, accessMode = AccessMode.L }));
+				}
+				else
+					Utility.CError(incriminate, ErrorCode.InitializeOnNonReferenceType);
+
+				cloneExpr = new CloneExpression(baseExpr, new VTAMCollection(new VTAM { vType = leftVT, accessMode = recoveryAM }));
+			
+				local ObjectMethod objMethod = new ObjectMethod { object = cloneExpr, methodGroup = initMG };
+
+				local IValueExpression mc = MatchMethodCall(objMethod, parameters, incriminate, true, null);		// Constructors are always explicit
+
+				if(mc.vtams.Length != 0)
+					Utility.CError(incriminate, ErrorCode.InitializeMethodReturnsValues);
+
+				return new InitializeAndRecover(true, mc, new VTAMCollection(new VTAM { vType = leftVT, accessMode = recoveryAM }));
+			}
+
+			public function IValueExpression CompileInitializeArray(NewInstance expr, Scope scope, ExpressionListNode initializersNode)
+			{
+				local ArrayOfTypeObject leftVT = expr.vtams[0].vType as ArrayOfTypeObject;
+				local MultipleValues exprList = CompileExpressionList(initializersNode, scope, true);
+
+				local VType targetVType = leftVT.containedType;
+
+				local InitializeArray pInitializerNode = new InitializeArray(new LocalVariable(null, leftVT, false, false),
+					new VTAMCollection(new VTAM { vType = leftVT, accessMode = AccessMode.L }), initializersNode );
+
+				local List:<IValueExpression> initializers = new List:<IValueExpression>();
+				local List:<largeuint> dimensions = new List:<largeuint>();
+
+				local largeuint dimCount = 1;
+			
+				foreach(IValueExpression iexpr in exprList.expressions)
+				{
+					local IValueExpression subExpr = AdjustValueCount(iexpr, initializersNode, 1);
+					local VTAMCollection targetVTAM = new VTAMCollection(new VTAM { vType = targetVType, accessMode = AccessMode.Any });
+					subExpr = ConvertExpression(initializersNode, subExpr, targetVTAM);
+
+					initializers.Add(subExpr);
+				}
+
+				if(expr.parameters == null)
+				{
+					if(leftVT.dimensions != 1)
+						Utility.CError(initializersNode, ErrorCode.ParameterlessInitializerOnMultidimensionalArray);
+
+					local largeuint d = exprList.expressions.Length;
+					dimensions.Add(d);
+					dimCount = d;
+				}
+				else
+				{
+					foreach(IValueExpression iexpr in expr.parameters.expressions)
+					{
+						if(!(iexpr is Constant))
+							Utility.CError(initializersNode, ErrorCode.InitializerDimensionNotConstant);
+						if(iexpr.vtams[0].vType.longName != CompilerConstants.arrayIndexType())
+							Utility.CError(initializersNode, ErrorCode.InitializerDimensionWrongType);
+
+						local largeuint d = NativeServices.StrToLargeUInt((iexpr as Constant).value);
+
+						if(d < 0)
+							Utility.CError(initializersNode, ErrorCode.NegativeDimension);
+
+						dimensions.Add(d);
+						dimCount = dimCount * d;
+					}
+
+					if(dimCount != exprList.expressions.Length)
+						Utility.CError(initializersNode, ErrorCode.DimensionInitializerMismatch, dimCount as string, exprList.expressions.Length as string);
+				}
+
+				pInitializerNode.initializers = initializers.ToArray();
+				pInitializerNode.dimensions = dimensions.ToArray();
+
+				return pInitializerNode;
+			}
+
+
+			public function IValueExpression CompileInitializeProperties(NewInstance expr, Scope scope, PropertyInitializerListNode initializersNode)
+			{
+				if(!(expr.vtams[0].vType is StructuredTypeObject))
+					Utility.CError(initializersNode, ErrorCode.InitializerOnNonStructuredType);
+
+				local StructuredTypeObject leftVT = expr.vtams[0].vType as StructuredTypeObject;
+
+				local IValueExpression baseExpr;
+				if(leftVT.declType == "class" || leftVT.declType == "struct")
+					baseExpr = expr;
+				else
+					Utility.CError(initializersNode, ErrorCode.InitializerOnNonStructuredType);
+			
+				local MemberLookupScope mls = new MemberLookupScope(this, null, leftVT);
+
+				local List:<PropertyInitializer> initializers = new List:<PropertyInitializer>();
+
+				local InitializeProperties pInitializerNode = new InitializeProperties(new LocalVariable(null, leftVT, false, false),
+					new VTAMCollection(new VTAM { vType = leftVT, accessMode = AccessMode.L }), initializersNode );
+
+				mls.thisLocal = pInitializerNode.localVar;
+
+				local HashSet:<string> propertiesSet = new HashSet:<string>();
+				foreach(PropertyInitializerNode p in initializersNode.initializers)
+				{
+					local string pName = p.name.token.str;
+
+					if(propertiesSet[pName])
+						Utility.CError(p, ErrorCode.PropertyAlreadyInitialized, pName);
+					propertiesSet.Add(pName);
+
+					local ICObject destObj = mls.Lookup(pName, p);
+					if(destObj == null)
+						Utility.CError(p, ErrorCode.InitializerPropertyNotFound, pName);
+					if(!(destObj is ObjectProperty))
+						Utility.CError(p, ErrorCode.InitializedNonProperty);
+					local ObjectProperty dest = destObj as ObjectProperty;
+
+					local IValueExpression src = AdjustValueCount(CompileExpression(p.expression, scope, true).ToValues(p), p.expression, 1);
+
+					// Intercepts need to be deferred to emission due to some shitty design with the assign emitter
+					if(dest.vtams[0].vType != VType.InterceptType)
+					{
+						local VTAMCollection targetVTAMs = new VTAMCollection(new VTAM { vType = dest.vtams[0].vType, accessMode = AccessMode.Any });
+						src = ConvertExpression(p, src, targetVTAMs);
+					}
+
+					initializers.Add(new PropertyInitializer(dest, src, p));
+				}
+
+				pInitializerNode.initializers = initializers.ToArray();
+				return pInitializerNode;
+			}
+
+			public function IValueExpression CompileTernary(TernaryNode node, Scope scope)
+			{
+				local IValueExpression trueExprs = CompileExpressionList(node.operands[0] as ExpressionListNode, scope, true);
+				local IValueExpression falseExprs = CompileExpressionList(node.operands[1] as ExpressionListNode, scope, true);
+
+				local largeuint numTrue = trueExprs.vtams.Length;
+				local largeuint numFalse = falseExprs.vtams.Length;
+				local largeuint numValues = numTrue;
+
+				if(numTrue == 0 || numFalse == 0)
+					Utility.CError(node, ErrorCode.ConditionalExpressionNotValue);
+
+				if(numTrue > numFalse)
+				{
+					trueExprs = AdjustValueCount(trueExprs, node, numFalse);
+					numValues = numFalse;
+				}
+				else if(numFalse > numTrue)
+					falseExprs = AdjustValueCount(falseExprs, node, numTrue);
+
+				local List:<VTAM> targetVTAMs = new List:<VTAM>();
+				local List:<VTAM> resultVTAMs = new List:<VTAM>();
+
+				for(local largeuint i=0;i<numValues;i++)
+				{
+					local VType preferVType;
+					local VType trueVType = trueExprs.vtams[0].vType;
+					local VType falseVType = falseExprs.vtams[0].vType;
+
+					if(trueVType.longName == "Core.nullreference")
+						trueVType = gst["Core.Object"] as VType;
+
+					if(falseVType.longName == "Core.nullreference")
+						falseVType = gst["Core.Object"] as VType;
+
+					if(trueVType == falseVType)
+						preferVType = trueVType;
+					else
+					{
+						if(Utility.TypeDirectlyCastable(falseVType, trueVType))
+							preferVType = trueVType;
+						else if(Utility.TypeDirectlyCastable(trueVType, falseVType))
+							preferVType = falseVType;
+						else
+						{
+							// Neither can be cast directly to the other, see if there's a subtype in the heirarchy
+							local HashSet:<VType> reduceSet = new HashSet:<VType>();
+
+							// See if we can reduce one of the values to the other
+							if(trueVType is StructuredTypeObject && falseVType is StructuredTypeObject)
+							{
+								local StructuredTypeObject trueST = trueVType as StructuredTypeObject;
+								local StructuredTypeObject falseST = falseVType as StructuredTypeObject;
+								foreach(InterfaceImplementationObject interf in trueST.interfaces)
+									reduceSet.Add(interf.interfaceType);
+
+								local StructuredTypeObject pType = trueST;
+								while(pType != null)
+								{
+									reduceSet.Add(pType);
+									pType = pType.parentType;
+								}
+
+								foreach(InterfaceImplementationObject interf in falseST.interfaces)
+								{
+									if(reduceSet[interf.interfaceType])
+									{
+										if(preferVType != null)
+											Utility.CError(node, ErrorCode.TernaryPairResolvesToMultipleInterfaces, (i + 1) as string);
+
+										preferVType = interf.interfaceType;
+									}
+								}
+
+								pType = falseST;
+								while(pType != null)
+								{
+									if(reduceSet[pType])
+									{
+										preferVType = pType;
+										break;
+									}
+									pType = pType.parentType;
+								}
+							}
+
+							if(preferVType == null)
+								Utility.CError(node, ErrorCode.TernaryPairNotConvertable, (i + 1) as string);
+						}
+					}
+
+					local AccessMode resultAccessMode = AccessMode.R;
+					if(preferVType.IsRefStruct)
+						resultAccessMode = AccessMode.CP;
+
+					targetVTAMs.Add(new VTAM { vType = preferVType, accessMode = AccessMode.Any });
+					resultVTAMs.Add(new VTAM { vType = preferVType, accessMode = resultAccessMode });
+				}
+
+				local VTAMCollection targetVTAMCollection = new VTAMCollection(targetVTAMs);
+				trueExprs = ConvertExpression(node, trueExprs, targetVTAMCollection);
+				falseExprs = ConvertExpression(node, falseExprs, targetVTAMCollection);
+
+				local IValueExpression cond = CompiledExprToBoolean(node, CompileExpression(node.condition, scope, true).ToValues(node.condition));
+
+				// Fold static conditions
+				// TODO: Fix compare compatibility bug
+				if(cond is Constant && (cond as Constant).signal == Constant.Signal.Value && (cond.vtams[0].vType as ICObject) == gst["Core.bool"])
+				{
+					if((cond as Constant).value == "true")
+						return trueExprs;
+					else
+						return falseExprs;
+				}
+
+				return new TernaryExpression(trueExprs, falseExprs, cond, new VTAMCollection(resultVTAMs), node);
+			}
+
+			public function BoundMethodDelegation DelegateBoundMethod(IValueExpression obj, MethodGroup mg, BoundDelegateTypeObject bdt, ASTNode incriminate)
+			{
+				if(!bdt.isCompiled)
+					throw new UnresolvedExpressionSignal();
+
+				local IValueExpression objV;
+				if(!mg.isStatic)
+				{
+					objV = AdjustValueCount(obj, incriminate, 1);
+					local AccessMode bindTargetAM = AccessMode.R;
+					if(objV.vtams[0].vType.IsRefStruct)
+						bindTargetAM = AccessMode.CP;
+					local VTAMCollection targetVTAM = new VTAMCollection(new VTAM { vType = objV.vtams[0].vType, accessMode = bindTargetAM });
+					objV = ConvertExpression(incriminate, objV, targetVTAM);
+				}
+
+				// Find an appropriate overload
+				foreach(ICallable mi in mg.overloads)
+				{
+					local MethodObject m = mi as MethodObject;
+					local MethodParameterObject const[] mParams = m.parameterList.parameters;
+					local MethodParameterObject const[] dtParams = bdt.parameterList.parameters;
+					if(m.returnTypes.longName == bdt.returnTypes.longName && mParams.Length == dtParams.Length)
+					{
+						local bool matched = true;
+						foreach(MethodParameterObject mParam, largeuint idx in mParams)
+						{
+							local MethodParameterObject dtParam = dtParams[idx];
+							if(idx + 1 != m.thisParameterIndex && mParam.type.refType != dtParam.type.refType)
+							{
+								matched = false;
+								break;
+							}
+							if(dtParam.isNotNull != mParam.isNotNull || dtParam.isConst != mParam.isConst)
+							{
+								matched = false;
+								break;
+							}
+						}
+
+						if(matched)
+							return new BoundMethodDelegation(m, bdt, objV);
+					}
+				}
+
+				Utility.CError(incriminate, ErrorCode.CouldNotMatchDelegate);
+				return null;
+			}
+
+			
+			// node: Node to compile
+			// scope: Scope that the expression exists in
+			// discharging: If true, then this is a read attempt and should discharge intercepts
+			//
+			// This returns a compiled expression, it does NOT emit code.
+			public function ICObject CompileExpression(ASTNode node, Scope scope, bool discharging)
+			{
+				local ICObject v;
+
+				switch(node.GetType())
+				{
+				case(typeof(ExpressionTerminusNode)):
+					{
+						local ExpressionTerminusNode tNode = node as ExpressionTerminusNode;
+						switch(tNode.token.token.tokenType)
+						{
+						case(TokenType.Name, TokenType.RW_This):
+							{
+								v = scope.Lookup(tNode.token.token.str, node);
+								if(v == null)
+									Utility.CError(node, ErrorCode.UnresolvedName, tNode.token.token.str);
+
+								if(v is LocalVariable)
+								{
+									local LocalVariable localV = v as LocalVariable;
+									if(localV.method != null && localV.method != Utility.BlockMethod(scope))
+										Utility.CError(node, ErrorCode.AccessedExternalLocal);
+								}
+
+								v = DischargeIntercept(v, node, discharging) as ICObject;
+							}
+						case(TokenType.RW_Null):
+							{
+								return ConstantOfType("Core.nullreference", "null", Constant.Signal.NullRef);
+							}
+						case(TokenType.String):
+							{
+								return ConstantOfType("Core.string", tNode.token.token.str, Constant.Signal.Value);
+							}
+						case(TokenType.Number):
+							{
+								local string numType, numValue;
+								numValue, numType = NativeServices.ParseNumber(tNode.token.token.str);
+								return ConstantOfType(numType, numValue, Constant.Signal.Value);
+							}
+						case(TokenType.RW_True):
+							{
+								return ConstantOfType("Core.bool", "true", Constant.Signal.Value);
+							}
+						case(TokenType.RW_False):
+							{
+								return ConstantOfType("Core.bool", "false", Constant.Signal.Value);
+							}
+						}
+
+						Utility.Assert(false);
+					}
+				case(typeof(IndirectNode)):
+					{
+						local IndirectNode tNode = (node as IndirectNode);
+						local ICObject left = CompileExpression(tNode.operands[0], scope, true);
+
+						if(left is StructuredTypeObject || left is Namespace)
+						{
+							local Namespace leftNS;
+							if(left is StructuredTypeObject)
+							{
+								local StructuredTypeObject leftST = (left as StructuredTypeObject);
+								if(!leftST.isCompiled)
+									throw new UnresolvedExpressionSignal;
+								leftNS = leftST.ns;
+							}
+							else
+								leftNS = left as Namespace;
+
+							local string symbol = tNode.memberName.token.str;
+							if(!leftNS.symbols.ContainsKey(symbol))
+								Utility.CError(tNode.operands[1], ErrorCode.UnresolvedMember, symbol);
+
+							v = leftNS.symbols[symbol];
+
+							if(v is PropertyObject && !(v as PropertyObject).isStatic)
+								Utility.CError(tNode.operands[1], ErrorCode.ExpectedStaticMember, symbol);
+							if(v is MethodGroup && !(v as MethodGroup).isStatic)
+								Utility.CError(tNode.operands[1], ErrorCode.ExpectedStaticMember, symbol);
+
+							Utility.EnforceAccessibility(scope, leftNS, symbol, tNode);
+
+							// Fall through, this could be a type ref
+						}
+						else //if left.type == "CLocalVariable" or left.type == "CObjectProperty" or left.type == "CStaticInstance" then
+						{
+							local IValueExpression leftV = left.ToValues(node);
+							leftV = AdjustValueCount(leftV, tNode, 1);
+
+							if(!leftV.vtams[0].vType.isCompiled)
+								throw new UnresolvedExpressionSignal();
+
+							if(leftV.vtams[0].vType is ArrayOfTypeObject)
+							{
+								if(!gst.ContainsKey("Core.Array"))
+									throw new UnresolvedExpressionSignal();
+
+								local StructuredTypeObject arrayType = gst["Core.Array"] as StructuredTypeObject;
+								local VTAMCollection targetVTAMs = new VTAMCollection(new VTAM { vType = arrayType, accessMode = AccessMode.Any });
+								leftV = ConvertExpression(tNode, leftV, targetVTAMs);
+							}
+							else if(leftV.vtams[0].vType is StaticDelegateTypeObject)
+							{
+								if(!gst.ContainsKey("Core.RDX.Method"))
+									throw new UnresolvedExpressionSignal();
+
+								local StructuredTypeObject methodType = gst["Core.RDX.Method"] as StructuredTypeObject;
+								local VTAMCollection targetVTAMs = new VTAMCollection(new VTAM { vType = methodType, accessMode = AccessMode.Any });
+								leftV = ConvertExpression(tNode, leftV, targetVTAMs);
+							}
+
+							Utility.Assert(leftV.vtams[0].vType is StructuredTypeObject);
+
+							local StructuredTypeObject leftST = leftV.vtams[0].vType as StructuredTypeObject;
+							local Namespace ns = leftST.ns;
+							local ICObject right;
+
+							local string symbol = tNode.memberName.token.str;
+							if(!ns.symbols.ContainsKey(symbol))
+							{
+								// If this is an interface, try from Core.Object
+								if(leftST.declType == "interface")
+								{
+									if(!this.gst.ContainsKey("Core.Object"))
+										throw UnresolvedExpressionSignal.instance;
+
+									local StructuredTypeObject objType = this.gst["Core.Object"] as StructuredTypeObject;
+									ns = objType.ns;
+									if(!ns.symbols.ContainsKey(symbol))
+										Utility.CError(tNode.memberName, ErrorCode.UnresolvedMember, symbol, "Core.Object");
+									right = ns.symbols[symbol];
+								}
+								else
+									Utility.CError(tNode.memberName, ErrorCode.UnresolvedMember, symbol, leftST.prettyName);
+							}
+							else
+								right = ns.symbols[symbol];
+
+							Utility.EnforceAccessibility(scope, ns, symbol, tNode);
+
+							if(right is PropertyObject)
+							{
+								if((right as PropertyObject).isStatic)
+									Utility.CError(tNode.memberName, ErrorCode.ExpectedInstanceMember, symbol);
+								return new ObjectProperty(this, leftV, right as PropertyObject, tNode);
+							}
+							if(right is MethodGroup)
+							{
+								if((right as MethodGroup).isStatic)
+									Utility.CError(tNode.memberName, ErrorCode.ExpectedInstanceMember, symbol);
+								if((right as MethodGroup).isArrayIntercept)
+									Utility.CError(tNode, ErrorCode.CanNotAccessArrayIntercept, symbol);
+
+								local ObjectMethod objMethod = new ObjectMethod(leftV, right as MethodGroup);
+								objMethod.isExplicit = (tNode.explicitFlag != null);
+								return DischargeIntercept(objMethod, node, discharging) as ICObject;
+							}
+							Utility.Assert(false);
+						}
+					}
+				case(typeof(InvokeNode)):
+					{
+						local InvokeNode tNode = node as InvokeNode;
+						local ICObject left = CompileExpression(tNode.operands[0], scope, true);
+						local MultipleValues parameters;
+
+						if(tNode.operands[1] == null)
+							parameters = Utility.EmptyExpressionList();
+						else
+							parameters = CompileExpressionList(tNode.operands[1] as ExpressionListNode, scope, true) as MultipleValues;
+
+						local ICallable delegateType = null;
+						if(left is IValueExpression)
+						{
+							local IValueExpression leftV = left as IValueExpression;
+							if(leftV.vtams.Length > 0)
+							{
+								local VType leftVType = leftV.vtams[0].vType;
+								if(leftVType is StaticDelegateTypeObject || leftVType is BoundDelegateTypeObject)
+								{
+									delegateType = leftVType as DelegateTypeObject;
+									local VTAMCollection delegateVTAM = new VTAMCollection(new VTAM { vType = delegateType as DelegateTypeObject, accessMode = AccessMode.L });
+									left = ConvertExpression(tNode, AdjustValueCount(leftV, node, 1), delegateVTAM) as ICObject;
+								}
+							}
+						}
+
+						if(left is MethodGroup)
+						{
+							local MethodGroup leftMG = left as MethodGroup;
+
+							if(!leftMG.isCompiled)
+								throw new UnresolvedExpressionSignal();
+							if(leftMG.isIntercept || leftMG.isArrayIntercept)
+								Utility.CError(node, ErrorCode.CalledIntercept);
+						}
+						else if(!(left is ObjectMethod) && delegateType != null)
+							Utility.CError(node, ErrorCode.CalledNonMethod);
+
+						local bool leftIsExplicit = (left is ObjectMethod) && (left as ObjectMethod).isExplicit;
+						return MatchMethodCall(left, parameters, node, leftIsExplicit, delegateType) as ICObject;
+					}
+				case(typeof(BinaryOperatorNode), typeof(UnaryOperatorNode)):
+					{
+						return OperationToMethod(node as ExpressionNode, scope) as ICObject;
+					}
+				case(typeof(TemplateNode)):
+					{
+						local TemplateNode tNode = node as TemplateNode;
+						local ICObject left = CompileExpression(tNode.operands[0], scope, true);
+
+						if(!(left is StructuredTypeObject))
+							Utility.CError(node, ErrorCode.TemplateFromNonStructuredType);
+
+						local StructuredTypeObject leftST = left as StructuredTypeObject;
+						if(!(left as StructuredTypeObject).isCompiled)
+							throw new UnresolvedExpressionSignal();
+
+						if(!leftST.isTemplate)
+							Utility.CError(node, ErrorCode.TemplateFromNonStructuredType);
+
+						local List:<VType> templateParameters = new List:<VType>();
+
+						foreach(BaselineTypeNode trNode in (tNode.operands[1] as TypeTupleNode).types)
+						{
+							local TypeReference tArg = new TypeReference(this, trNode, scope, false);
+							tArg.Compile(this);
+
+							if((!tArg.isCompiled) || (!tArg.refType.isCompiled))
+								throw new UnresolvedExpressionSignal();
+
+							templateParameters.Add(tArg.refType);
+						}
+
+						if(leftST.uncompiledNode.templateParameters.parameters.Length != templateParameters.Length)
+							Utility.CError(node, ErrorCode.TemplateParameterMismatch);
+
+						v = leftST.ConstructTypeTemplate(this, templateParameters.ToArray());
+
+						if(!this.compilingTypes)
+						{
+							// This was declared inside a method, reestablish types
+							CompileTypeShells();
+							Utility.Assert((v as StructuredTypeObject).isCompiled);
+						}
+					}
+				case(typeof(PrecompiledNode)):
+					{
+						// Precompiled node
+						return (node as PrecompiledNode).containedExpression;
+					}
+				case(typeof(IndexNode)):
+					{
+						return CompileIndexExpression(node as IndexNode, scope, discharging) as ICObject;
+					}
+				case(typeof(CheckCastNode)):
+					{
+						if(!this.gst.ContainsKey("Core.bool"))
+							throw UnresolvedExpressionSignal.instance;
+
+						local StructuredTypeObject boolType = this.gst["Core.bool"] as StructuredTypeObject;
+						local CheckCastNode ccNode = node as CheckCastNode;
+
+						local IValueExpression left = AdjustValueCount(CompileExpression(ccNode.operands[0], scope, true).ToValues(ccNode.operands[0]), node, 1);
+						local TypeReference tr = new TypeReference(this, ccNode.targetType, scope, true);
+						tr.Compile(this);
+
+						if(!tr.isCompiled)
+							Utility.CError(node, ErrorCode.CastToNonType);
+
+						local VType leftType = left.vtams[0].vType;
+						local VType rightType = tr.refType;
+
+						if(Utility.TypeDirectlyCastable(leftType, rightType))
+							// If this is a guaranteed convert, always accept
+							return ConstantOfType("Core.bool", "true", Constant.Signal.Value);
+
+						// If this is a polymorphic convert, then check
+						if(Utility.TypePolymorphicallyCastable(leftType, rightType))
+						{
+							local VTAMCollection newVTAMs = new VTAMCollection(new VTAM { vType = boolType, accessMode = AccessMode.R });
+							left = ConvertExpression(node, left, newVTAMs);
+
+							return new CheckCast(left, rightType, newVTAMs);
+						}
+
+						// Otherwise, this is guaranteed to fail
+						return new Constant(boolType, "false", Constant.Signal.Value);
+					}
+				case(typeof(CastNode)):
+					{
+						local CastNode tNode = node as CastNode;
+						local ICObject left = CompileExpression(tNode.operands[0], scope, true);
+						local BaselineTypeNode[] targetTypeRefs;
+
+						if(tNode.targetType != null)
+							targetTypeRefs = new BaselineTypeNode[1] { tNode.targetType };
+						else
+						{
+							local TypeTupleNode tt = tNode.operands[1] as TypeTupleNode;
+
+							targetTypeRefs = new BaselineTypeNode[tt.types.Length];
+
+							foreach(BaselineTypeNode t, largeuint i in tt.types)
+								targetTypeRefs[i] = t;
+						}
+
+						local VTAM[] targetVTAMs = new VTAM[targetTypeRefs.Length];
+
+						foreach(BaselineTypeNode trNode, largeuint tri in targetTypeRefs)
+						{
+							local TypeReference tr = new TypeReference(this, trNode, scope, true);
+							tr.Compile(this);
+							if(!tr.isCompiled)
+								Utility.CError(node, ErrorCode.CastToNonType);
+
+							local VType right = tr.refType as VType;
+
+							if(left is MethodGroup)
+							{
+								if(tNode.targetType == null)
+									Utility.CError(node, ErrorCode.DelegatedToMultipleTypes);
+
+								if(right is StaticDelegateTypeObject)
+									return Utility.DelegateMethodGroup(left as MethodGroup, right as StaticDelegateTypeObject, node);
+								else if(right is BoundDelegateTypeObject)
+									return DelegateBoundMethod(null, left as MethodGroup, right as BoundDelegateTypeObject, node);
+								else
+									Utility.CError(node, ErrorCode.BadDelegation, right.prettyName);
+							}
+
+							if(left is ObjectMethod)
+							{
+								if(tNode.targetType == null)
+									Utility.CError(node, ErrorCode.DelegatedToMultipleTypes);
+
+								if(!(right is BoundDelegateTypeObject))
+									Utility.CError(node, ErrorCode.BadDelegation, right.prettyName);
+
+								return DelegateBoundMethod((left as ObjectMethod).object, (left as ObjectMethod).methodGroup, right as BoundDelegateTypeObject, node);
+							}
+
+							local AccessMode targetAccessMode = AccessMode.R;
+							if(right.IsRefStruct)
+								targetAccessMode = AccessMode.CP;
+
+							targetVTAMs[tri] = new VTAM { vType = right, accessMode = targetAccessMode };
+						}
+
+						return ConvertExpression(node, AdjustValueCount(left.ToValues(node), node, targetTypeRefs.Length), new VTAMCollection(targetVTAMs), true, false) as ICObject;
+					}
+				case(typeof(SingleResultNode)):
+					{
+						local ICObject left = CompileExpression((node as SingleResultNode).operands[0], scope, true);
+						return AdjustValueCount(left.ToValues(node), node, 1) as ICObject;
+					}
+				case(typeof(NewInstanceNode)):
+					{
+						local NewInstanceNode tNode = node as NewInstanceNode;
+						local TypeReference tr = new TypeReference(this, tNode.typeSpec, scope, true);
+						tr.Compile(this);
+						if(!tr.isCompiled)
+							Utility.CError(node, ErrorCode.NewCreatedNonType);
+
+						local VType t = tr.refType;
+
+						if(t is StructuredTypeObject)
+						{
+							local StructuredTypeObject st = t as StructuredTypeObject;
+							if(st.declType == "interface")
+								Utility.CError(node, ErrorCode.NewInterface);
+							if(st.isAbstract)
+								Utility.CError(node, ErrorCode.NewAbstractType, st.abstractBlame.signature);
+						}
+
+						if(t is StaticDelegateTypeObject || t is BoundDelegateTypeObject)
+							Utility.CError(node, ErrorCode.NewDelegate);
+
+						local NewInstance instance = new NewInstance(tr.specifiedDimensions, new VTAMCollection(new VTAM { vType = t, accessMode = AccessMode.R }));
+
+						if(t is ArrayOfTypeObject)
+						{
+							if(tNode.initializers != null)
+							{
+								if(tNode.initializers is PropertyInitializerListNode)
+									Utility.CError(node, ErrorCode.InitializedArrayWithProperties);
+
+								return CompileInitializeArray(instance, scope, tNode.initializers as ExpressionListNode) as ICObject;
+							}
+							else
+							{
+								if(instance.parameters == null)
+									Utility.CError(node, ErrorCode.ExpectedDimensionsForArrayCreation);
+								return instance;
+							}
+						}
+						else
+						{
+							if(tNode.initializers != null)
+							{
+								if(tNode.initializers is ExpressionListNode)
+								{
+									if((tNode.initializers as ExpressionListNode).expressions.Length == 0)
+									{
+										// Empty expression list, convert to an empty property initializer set
+										local PropertyInitializerListNode convertedNode = new PropertyInitializerListNode(tNode.initializers.codeLocation);
+										convertedNode.initializers = new PropertyInitializerNode[0];
+										tNode.initializers = convertedNode;
+									}
+									else
+										Utility.CError(node, ErrorCode.InitializedObjectWithExpressions);
+								}
+								return CompileInitializeProperties(instance, scope, tNode.initializers as PropertyInitializerListNode) as ICObject;
+							}
+							else
+								return CompileInitializeInstance(instance, scope, tNode.initParameters, node) as ICObject;
+						}
+					}
+				case(typeof(TypeOfNode)):
+					{
+						local TypeOfNode tNode = node as TypeOfNode;
+						local ICObject left = CompileExpression(tNode.operands[0], scope, true);
+
+						switch(left.GetType())
+						{
+						case(typeof(StructuredTypeObject)):
+							{
+								local StructuredTypeObject tLeft = left as StructuredTypeObject;
+								if(!tLeft.isCompiled)
+									throw new UnresolvedExpressionSignal();
+								return ConstantOfType("Core.RDX.StructuredType", tLeft.longName, Constant.Signal.Resource);
+							}
+						case(typeof(BoundDelegateTypeObject)):
+							{
+								local BoundDelegateTypeObject tLeft = left as BoundDelegateTypeObject;
+								if(!tLeft.isCompiled)
+									throw new UnresolvedExpressionSignal();
+								return ConstantOfType("Core.RDX.StructuredType", tLeft.longName, Constant.Signal.Resource);
+							}
+						case(typeof(ArrayOfTypeObject)):
+							{
+								local ArrayOfTypeObject tLeft = left as ArrayOfTypeObject;
+								if(!tLeft.isCompiled)
+									throw new UnresolvedExpressionSignal();
+								return ConstantOfType("Core.RDX.ArrayOfType", tLeft.longName, Constant.Signal.Resource);
+							}
+						case(typeof(StaticDelegateTypeObject)):
+							{
+								local StaticDelegateTypeObject tLeft = left as StaticDelegateTypeObject;
+								if(!tLeft.isCompiled)
+									throw new UnresolvedExpressionSignal();
+								return ConstantOfType("Core.RDX.DelegateType", tLeft.longName, Constant.Signal.Resource);
+							}
+						case(default):
+							{
+								local IValueExpression leftV = AdjustValueCount(left.ToValues(node), node, 1);
+								if(leftV.vtams[0].vType.longName == "Core.nullreference")
+									return this.gst["Core.Object"] as VType;
+
+								return leftV.vtams[0].vType;
+							}
+						}
+					}
+				case(typeof(TernaryNode)):
+					{
+						return CompileTernary(node as TernaryNode, scope) as ICObject;
+					}
+				case(typeof(CreateTupleNode)):
+					{
+						return CompileExpressionList((node as CreateTupleNode).operands[0] as ExpressionListNode, scope, true) as ICObject;
+					}
+				case(default):
+					{
+						Utility.Assert(false, "Unimplemented expression node type");
+						return null;
+					}
+				}
+
+				if(v is TypeReference)
+				{
+					local TypeReference vst = v as TypeReference;
+					if(!vst.isCompiled)
+						throw new UnresolvedExpressionSignal();
+
+					v = vst.refType;
+				}
+
+				return v;
+			}
+
+			public function MultipleValues CompileExpressionList(ExpressionListNode node, Scope scope, bool discharging)
+			{
+				local MVTemplate mvt = new MVTemplate();
+
+				foreach(ExpressionNode expr in node.expressions)
+				{
+					local IValueExpression exprNode = CompileExpression(expr, scope, discharging).ToValues(expr);
+					mvt.Append(exprNode);
+				}
+
+				return mvt.ToMV();
+			}
+
+			public function DelegateTypeObject CreateDelegateType(Namespace ns, Scope scope, MemberDeclNode node)
+			{
+				local List:<MethodParameterObject> parameters = new List:<MethodParameterObject>();
+				local List:<TypeReference> returnTypes = new List:<TypeReference>();
+				local bool isStatic = false;
+
+				if(node.accessDescriptor.staticFlag != null)
+					isStatic = true;
+
+				if(node.parameters != null)
+				{
+					foreach(FunctionDeclParameterNode parameterNode in node.parameters.parameters)
+					{
+						local TypeReference paramType = new TypeReference(this, parameterNode.type, scope, false);
+						local MethodParameterObject parameter = new MethodParameterObject(paramType, null, (parameterNode.constFlag != null), (parameterNode.notNullFlag != null));
+	
+						parameters.Add(parameter);
+					}
+				}
+
+				foreach(BaselineTypeNode typeNode in node.returnTypes.types)
+					returnTypes.Add(new TypeReference(this, typeNode, scope, false));
+
+				local DelegateTypeObject dt;
+				local ParameterList tParameters = new ParameterList(this, parameters.ToArray());
+				local TokenNode tName = node.name;
+				local TypeTuple tReturnTypes = new TypeTuple(this, returnTypes.ToArray());
+
+				if(isStatic)
+				{
+					dt = new StaticDelegateTypeObject(tName, tParameters, tReturnTypes, ns, node, true, tParameters, node);
+				}
+				else
+				{
+					dt = new BoundDelegateTypeObject(tName, tParameters, tReturnTypes, ns, node, true, node);
+
+					local MethodParameterObject[] actualParams = new MethodParameterObject[tParameters.parameters.Length + 1];
+
+					local TokenNode thisTokenNode = new TokenNode(node.name.codeLocation);
+					thisTokenNode.token = new Token { codeLocation = node.name.codeLocation, tokenType = TokenType.Name, str = "this" };
+					actualParams[0] = new MethodParameterObject(new TypeReference(dt), thisTokenNode, true, true);
+
+					foreach(MethodParameterObject p, largeuint idx in tParameters.parameters)
+						actualParams[idx + 1] = p;
+
+					(dt as BoundDelegateTypeObject).actualParameterList = new ParameterList(this, actualParams);
+				}
+
+				return dt;
+			}
+
+
+			public function BoundDelegateMarshal MarshalForBoundDelegate(BoundDelegateTypeObject bdt, ICallable method)
+			{
+				local string mName = (method as ICompilable).longName;
+				if(bdt.methodMarshals.ContainsKey(mName))
+					return bdt.methodMarshals[mName];
+
+				local largeuint methodThisParameterIndex;
+				local bool hasThisParameter = false;
+
+				// Doesn't exist
+				local string bdtName = bdt.longName;
+				local BoundDelegateMarshal marshal = new BoundDelegateMarshal(bdt, bdtName + "/glueInvoke/" + (method as ICompilable).longName, bdt.returnTypes, bdt, method);
+				marshal.longName = bdtName + "/glue/" + (method as ICompilable).longName;
+
+				if(method is MethodObject && !(method as MethodObject).isStatic)
+				{
+					hasThisParameter = true;
+					marshal.thisType = (method as MethodObject).definedByType;
+					methodThisParameterIndex = (method as MethodObject).thisParameterIndex;
+				}
+				else if(method is StaticDelegateTypeObject)
+					marshal.thisType = (method as StaticDelegateTypeObject);
+				else
+					Utility.Assert(method is MethodObject && (method as MethodObject).isStatic);
+
+				// Generate a new parameter list with the marshal as "this"
+				local MethodParameterObject[] newParameters = new MethodParameterObject[bdt.actualParameterList.parameters.Length + 1];
+				foreach(MethodParameterObject param, largeuint idx in bdt.actualParameterList.parameters)
+					newParameters[idx + 1] = param;
+
+				local TypeReference tRef = new TypeReference(marshal);
+				tRef.Compile(this);
+
+				newParameters[0] = new MethodParameterObject {
+					type = tRef,
+					name = new TokenNode { token = new Token { tokenType = TokenType.Name, str = "this" } },
+					isConst = true,
+					isNotNull = true,
+				};
+
+				marshal.actualParameterList = new ParameterList(this, newParameters);
+				marshal.actualParameterList.Compile(this);
+				Utility.Assert(marshal.actualParameterList.isCompiled);
+
+				bdt.methodMarshals[mName] = marshal;
+				gst[marshal.longName] = marshal;
+
+				local List:<CodeEmission.PInstr> instructions = new List:<CodeEmission.PInstr>();
+
+				// NOTE: "method" may actually be a delegate
+				local bool isStaticDelegate = (method is StaticDelegateTypeObject);
+
+				local Dictionary:<largeuint, largeuint> refReturnValueStorage = new Dictionary:<largeuint, largeuint>();	// [returnValueIndex] = localIndex
+				local largeuint firstStorageLocal = marshal.actualParameterList.parameters.Length;
+				local largeuint numStoredLocals = 0;
+				local largeuint delegateValueLocal;
+
+				// Create storage space for reference structs
+				foreach(TypeReference ref, largeuint idx in method.returnTypes.typeReferences)
+				{
+					local VType rvType = ref.refType;
+					if(rvType.IsRefStruct)
+					{
+						local largeuint storedLocal = firstStorageLocal + numStoredLocals;
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.AllocLocal, res1 = rvType.longName } );
+						numStoredLocals++;
+						refReturnValueStorage[idx] = storedLocal;
+					}
+				}
+
+				if(isStaticDelegate)
+				{
+					delegateValueLocal = firstStorageLocal + numStoredLocals;
+					numStoredLocals++;
+
+					// Load "this"
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = 0 } );
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+					// Load the delegate
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Property, int1 = 0 } );
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+					// Store it in a local
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.CreateLocal, res1 = (method as ICompilable).longName } );
+				}
+
+				// Push return value space
+				foreach(TypeReference ref, largeuint idx in method.returnTypes.typeReferences)
+				{
+					if(refReturnValueStorage.ContainsKey(idx))
+					{
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = refReturnValueStorage[idx] } );
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.PinLocal } );
+					}
+					else
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.PushEmpty, res1 = ref.refType.longName } );
+				}
+
+				if(isStaticDelegate)
+				{
+					// Push local for delegate call
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = delegateValueLocal } );
+				}
+
+				// Push parameters
+				local largeuint fetchIndex = 1;
+				foreach(MethodParameterObject param, largeuint idx in method.actualParameterList.parameters)
+				{
+					if(hasThisParameter && idx == methodThisParameterIndex - 1)
+					{
+						// Load "this" value
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = 0 } );
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Property, int1 = 0 } );
+						if(!(method as MethodObject).definedByType.IsRefStruct)
+							instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+					}
+					else
+					{
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = fetchIndex } );
+						instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+						fetchIndex++;
+					}
+				}
+
+				if(isStaticDelegate)
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.CallDelegate, res1 = (method as ICompilable).longName } );
+				else if((method is MethodObject) && (method as MethodObject).isVirtual)
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.CallVirtual, res1 = (method as MethodObject).longName } );
+				else
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Call, res1 = (method as MethodObject).longName } );
+				instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.Return, int1 = method.returnTypes.typeReferences.Length } );
+
+				for(local largeuint i=0;i<numStoredLocals;i++)
+					instructions.Add(new CodeEmission.PInstr { op = CodeEmission.POp.RemoveLocal } );
+
+				marshal.instructions = instructions.ToArray();
+				marshal.FinishCompile();
+
+				return marshal;
+			}
+
+			private function void AddNamespace(Namespace ns, InstanciatedNamespace ins, ASTNode const[] declarations)
+			{
+				foreach(ASTNode decl in declarations)
+				{
+					switch(decl.GetType())
+					{
+					case(typeof(NamespaceNode)):
+						{
+							local NamespaceNode nsDecl = decl as NamespaceNode;
+							local string declName = nsDecl.name.token.str;
+							local Namespace newNS;
+							if(ns.symbols.ContainsKey(declName))
+								newNS = ns.symbols[declName] as Namespace;
+							else
+							{
+								newNS = new Namespace(ns, declName, null);
+								ns.InsertUnique(declName, newNS, nsDecl.name);
+							}
+
+							local InstanciatedNamespace newINS = new InstanciatedNamespace(ins, newNS, null);
+							AddNamespace(newNS, newINS, nsDecl.members.declarations);
+						}
+					case(typeof(UsingNode)):
+						{
+							ins.imports.Add(new ImportedNamespace(this, (decl as UsingNode).namespacePath));
+						}
+					case(typeof(MemberDeclNode)):
+						{
+							local MemberDeclNode mDecl = decl as MemberDeclNode;
+	
+							if(_constants.structuredTypeDeclTypes.ContainsKey(mDecl.declType.token.str))
+							{
+								local StructuredTypeObject uncompiledType = new StructuredTypeObject(new Namespace(ns, mDecl.name.token.str, null), ins, mDecl.attribTags, mDecl);
+								ns.InsertUnique(mDecl.name.token.str, uncompiledType, mDecl.name);
+								uncompiledType.ns.createdBy = uncompiledType;
+	
+								this.uncompiled.Add(uncompiledType);
+							}
+							else if(mDecl.declType.token.str == "delegate")
+							{
+								local DelegateTypeObject uncompiledType = CreateDelegateType(ns, ins, mDecl);
+								ns.InsertUnique(mDecl.name.token.str, uncompiledType, mDecl.name);
+								this.uncompiled.Add(uncompiledType);
+							}
+							else
+								Utility.CError(mDecl, ErrorCode.BadDeclInNamespace, mDecl.name.token.str);
+						}
+					case(default):
+						{
+							Utility.Assert(false);
+						}
+					}
+				}
+			}
+
+			public function void MergeParsedFile(DeclSpaceNode pf)
+			{
+				AddNamespace(globalNamespace, new InstanciatedNamespace(null, this.globalNamespace, null), pf.declarations);
+			}
+
+			public function VType ExpressionToType(ASTNode typeNode, Scope scope, bool allowArrays)
+			{
+				local ICObject expr;
+
+				try
+				{
+					expr = CompileExpression(typeNode, scope, true);
+				}
+				catch(UnresolvedExpressionSignal ure)
+				{
+					return null;
+				}
+
+				if(expr is ArrayOfTypeObject)
+				{
+					if(allowArrays)
+						return expr as ArrayOfTypeObject;
+					Utility.CError(typeNode, ErrorCode.ArraysNotAllowed);
+				}
+
+				if(!(expr is StructuredTypeObject) && !(expr is StaticDelegateTypeObject) && !(expr is BoundDelegateTypeObject))
+				{
+					Utility.CError(typeNode, ErrorCode.ExpectedTypeReference, expr.printableName);
+					return null;
+				}
+
+				if(expr is StructuredTypeObject && (expr as StructuredTypeObject).isTemplate)
+					Utility.CError(typeNode, ErrorCode.NewTemplate);
+
+				return expr as VType;
+			}
+
+			public function DefaultInstance GetStructuredTypeDefault(StructuredTypeObject st)
+			{
+				local string finalValue;
+
+				if(st.initializers.Length == 0)
+					return null;
+
+				st.defaultDependencySet = new HashSet:<string>();
+
+				finalValue = "{\n";
+
+				foreach(Initializer init, largeuint idx in st.initializers)
+				{
+					if(idx != 0)
+						finalValue += ",\n";
+
+					local string pName = init.ownerMember.name;
+					if(_constants.rdxtReservedSymbols[pName])
+						pName = "'" + pName + "'";
+
+					finalValue = finalValue + "\t" + pName + " : " + init.defaultValue;
+
+					foreach(string k in init.defaultDependencySet)
+						st.defaultDependencySet.Add(k);
+				}
+				finalValue += "\n}";
+
+				return new DefaultInstance(this, st, finalValue, st.longName + "/default", null, false);
+			}
+
+
+			// Returns the packed initialization value
+			// vType: vType of the value being initialized
+			// expr: Expression to attempt to evaluate
+			// forceRef: If true, the expression must be an instance and not a reference to another resource
+			// indentLevel: Indentation level
+			// base: Prefix of any generated names
+			// dependencySet: A set of any dependency names needed by this initializer
+			// dimensions: Output array of dimensions
+			// incriminate: Node to incriminate if this errors
+			public function string GetInitializationValue(VType vType, IValueExpression expr, bool forceRef, uint indentLevel, string base, HashSet:<string> dependencySet,
+				List:<largeuint> dimensions, bool isAnonymous, ASTNode incriminate)
+			{
+				local string finalValue;
+			
+				local string indentation, indentation2, lineBreak;
+
+				// TODO: Configure indentation
+				if(false)
+				{
+					indentation = "";
+					indentation2 = "";
+					lineBreak = " ";
+				}
+				else
+				{
+					indentation = "";
+					for(local uint i=0;i<indentLevel;i++)
+						indentation += "\t";
+
+					indentation2 = indentation + "\t";
+					lineBreak = "\n";
+				}
+
+				// Initialization rules:
+				//    Enum:        To an EnumerantObject
+				//    Interface:   To a static instance
+				//    Class/array: Static instance or constructor
+				//    Struct:      To a constructor unless in parseableTypes, in which case Constant
+
+				local bool allowConstructor = false;
+
+				if(vType is StructuredTypeObject && _constants.parseableTypes[vType.longName])
+				{
+					if(!(expr is Constant))
+						Utility.CError(incriminate, ErrorCode.NonConstantInitializer);
+
+					local Constant exprConst = expr as Constant;
+					if(exprConst.signal != Constant.Signal.Value)
+						Utility.CError(incriminate, ErrorCode.NonConstantInitializer);
+
+					if(exprConst.vtams[0].vType.longName == CompilerConstants.stringType() && !forceRef)
+						Utility.CError(incriminate, ErrorCode.StringResource);
+
+					if(vType.longName == CompilerConstants.stringType())
+						finalValue = "'" + NativeServices.EscapeString(exprConst.value) + "'";
+					else
+						finalValue = exprConst.value;
+				}
+				else if(vType.IsObjectReference)
+				{
+					if(expr is ConvertedExpression)
+						expr = (expr as ConvertedExpression).expression;
+
+					if(Utility.CastMatchability(expr.vtams[0].vType, vType, false) as Enumerant.UnderlyingType > MatchLevel.Direct)
+						Utility.CError(incriminate, ErrorCode.InitializerNotCompatible);
+
+					allowConstructor = (vType is ArrayOfTypeObject || (vType is StructuredTypeObject && (vType as StructuredTypeObject).declType != "interface"));
+
+					if(expr is StaticInstance)
+					{
+						if(!forceRef)
+							Utility.CError(incriminate, ErrorCode.ResourceReferencesResource);
+
+						local string exprResName = (expr as StaticInstance).longName;
+						dependencySet.Add(exprResName);
+						finalValue = "res '" + Utility.EncodeRes(exprResName) + "'";
+					}
+					else if(expr is Constant)
+					{
+						local Constant exprConst = expr as Constant;
+						if(exprConst.vtams[0].vType.longName == "Core.nullreference")
+							finalValue = "null";
+						else if(exprConst.signal == Constant.Signal.Resource)
+							finalValue = "res '" + Utility.EncodeRes(exprConst.value) + "'";
+						else
+							finalValue = exprConst.value;
+					}
+					else if(expr is MethodDelegation)
+						finalValue = "res '" + Utility.EncodeRes((expr as MethodDelegation).method.longName) + "'";
+					else
+					{
+						if(!(expr is InitializeProperties) && !(expr is InitializeArray))
+							Utility.CError(incriminate, ErrorCode.BadPropertyInitializerType, expr.printableName);
+					}
+				}
+				else if(vType is StructuredTypeObject && (vType as StructuredTypeObject).declType == "enum")
+				{
+					if(!(expr is Constant))
+						Utility.CError(incriminate, ErrorCode.BadEnumeratorValueType, expr.printableName);
+					local Constant exprConst = expr as Constant;
+					if(exprConst.signal != Constant.Signal.Enum || exprConst.enumName == null)
+						Utility.CError(incriminate, ErrorCode.BadEnumeratorValueType, expr.printableName);
+
+					finalValue = "'" + NativeServices.EscapeString(exprConst.enumName) + "'";
+				}
+				else if(vType is StructuredTypeObject && (vType as StructuredTypeObject).declType == "struct")
+				{
+					allowConstructor = true;
+				}
+				else
+					Utility.Assert(false);
+
+				if(finalValue == null && allowConstructor)
+				{
+					if(!(expr is InitializeProperties) && !(expr is InitializeArray))
+						Utility.CError(incriminate, ErrorCode.ExpectedConstructorInitializer, expr.printableName);
+
+					if(forceRef)
+					{
+						local List:<largeuint> subDimensions = new List:<largeuint>();
+						local string diValue = GetInitializationValue(vType, expr, false, 0, base, dependencySet, subDimensions, isAnonymous, incriminate);
+
+						local DefaultInstance defaultInstance = new DefaultInstance(this, vType, diValue, base, subDimensions.ToArray(), isAnonymous);
+
+						dependencySet.Add(defaultInstance.longName);
+
+						return "res '" + Utility.EncodeRes(defaultInstance.longName) + "'";
+					}
+
+					if(expr is InitializeArray)
+					{
+						foreach(largeuint v in (expr as InitializeArray).dimensions)
+							dimensions.Add(v);
+					}
+
+					finalValue = "{" + lineBreak;
+
+					local largeuint numInitializers;
+					if(vType is ArrayOfTypeObject)
+						numInitializers = (expr as InitializeArray).initializers.Length;
+					else if(vType is StructuredTypeObject)
+						numInitializers = (expr as InitializeProperties).initializers.Length;
+					else
+						Utility.Assert(false, "Unimplemented");
+
+					for(local largeuint idx = 0; idx < numInitializers; idx++)
+					{
+						if(idx != 0)
+							finalValue += "," + lineBreak;
+
+						local bool requireRef;
+						local VType refType;
+						local ASTNode newIncriminate;
+						local IValueExpression valueExpr;
+						local string repitchName;
+
+						if(vType is ArrayOfTypeObject)
+						{
+							refType = (vType as ArrayOfTypeObject).containedType;
+							newIncriminate = (expr as InitializeArray).incriminateNode;
+							valueExpr = (expr as InitializeArray).initializers[idx];
+			
+							repitchName = idx as string;
+						}
+						else if(vType is StructuredTypeObject)
+						{
+							local PropertyInitializer pii = (expr as InitializeProperties).initializers[idx];
+							if(!(pii.dest is ObjectProperty))
+								Utility.CError(incriminate, ErrorCode.OnlyPropertyInitializersAllowed);
+
+							local ObjectProperty dest = pii.dest;
+
+							refType = dest.prop.typeOf.refType;
+							newIncriminate = pii.incriminateNode;
+							valueExpr = pii.src;
+							repitchName = dest.prop.name;
+						}
+						else
+							Utility.Assert(false, "Unimplemented");
+
+						if(refType.IsObjectReference)
+							requireRef = true;
+
+						local string propertyV = GetInitializationValue(refType, valueExpr, requireRef, indentLevel + 1, base + "." + repitchName, dependencySet, dimensions, isAnonymous, newIncriminate);
+
+						if(vType is ArrayOfTypeObject)
+							finalValue += indentation2 + propertyV;
+						else if(vType is StructuredTypeObject)
+						{
+							local PropertyInitializer pii = (expr as InitializeProperties).initializers[idx];
+							if(pii.dest is ObjectProperty)
+								Utility.CError(incriminate, ErrorCode.OnlyPropertyInitializersAllowed);
+
+							local ObjectProperty dest = pii.dest;
+
+							local string pName = dest.prop.name;
+							if(_constants.rdxtReservedSymbols[pName])
+								pName = "'" + pName + "'";
+
+							finalValue += indentation2 + pName + " : " + propertyV;
+						}
+						else
+							Utility.Assert(false, "Unimplemented");
+					}
+
+					finalValue += lineBreak + indentation + "}";
+				}
+
+				Utility.Assert(finalValue != null);
+
+				return finalValue;
+			}
+
+			public function IValueExpression DischargeIntercept(ICObject v, ASTNode incriminate, bool discharging)
+			{
+				if(!(v is ObjectMethod) || !(v as ObjectMethod).methodGroup.isIntercept)
+				{
+					// Not an intercept node
+					return v.ToValues(incriminate);
+				}
+
+				if(!discharging)
+					return new DischargedIntercept(v as ObjectMethod);
+
+				// Execute with no parameters to get the return value
+				return MatchMethodCall(v, Utility.EmptyExpressionList(), incriminate, false, null);
+			}
+
+			public function void CompileTypeShells()
+			{
+				local struct QueuedType
+				{
+					public property StructuredTypeObject st;
+					public property ASTNode incriminate;
+				};
+
+				local List:<QueuedType> newTypes = new List:<QueuedType>();
+
+				if(this.uncompiled.Length == 0)
+					return;
+
+				this.compilingTypes = true;
+
+				while(true)
+				{
+					local List:<ICompilable> pendingUncompiled = this.uncompiled;
+
+					if(pendingUncompiled.Length == 0)
+						break;
+
+					local bool compiledOK;
+					local bool madeAnyProgress = false;
+					local ASTNode incriminate = null;
+					this.uncompiled = new List:<ICompilable>();
+			
+					foreach(ICompilable u in pendingUncompiled)
+					{
+						compiledOK = false;
+
+						if(u.isCompiled)
+						{
+							// Precompiled
+							compiledOK = true;
+						}
+						else
+						{
+							incriminate = u.incriminateNode;
+							compiledOK = u.Compile(this);
+
+							if(compiledOK && u is StructuredTypeObject)
+								newTypes.Add(new QueuedType { st = u as StructuredTypeObject, incriminate = incriminate } );
+						}
+
+						if(compiledOK)
+							madeAnyProgress = true;
+						else
+						{
+							// Reinsert and try again
+							this.uncompiled.Add(u);
+						}
+					}
+
+					if(!madeAnyProgress)
+						Utility.CError(incriminate, ErrorCode.CircularDependency);
+				}
+				this.compilingTypes = false;
+
+				// Enforce non-circularity and enforce that byVals don't contain any mustberef
+				foreach(QueuedType nt in newTypes)
+				{
+					local StructuredTypeObject st = nt.st;
+					st.CheckCircularity(nt.incriminate);
+					if(st.declType == "struct" && st.byVal)
+						st.CheckByVals(nt.incriminate);
+				}
+			}
+
+			public function Constant ConstantOfType(string typeName, string value, Constant.Signal signal)
+			{
+				if(this.gst.ContainsKey(typeName))
+					return new Constant(this.gst[typeName] as VType, value, signal);
+				throw UnresolvedExpressionSignal.instance;
+			}
+
+			public function void CompileStatement(notnull CodeEmission.CodeEmissionState ces, notnull StatementNode stmt, notnull CodeBlock block)
+			{
+				switch(stmt.GetType())
+				{
+					case(typeof(WhileLoopNode)):
+					{
+						local WhileLoopNode whileStmt = stmt as WhileLoopNode;
+						local IValueExpression cond = CompiledExprToBoolean(stmt, CompileExpression(whileStmt.condition, block, true).ToValues(stmt));
+
+						local string lbl = ces.CreateLabel();
+						local string whileCondLabel = lbl + "_whilecond";
+						local string whileTrueLabel = lbl + "_whiletrue";
+						local string whileEndLabel = lbl + "_whileend";
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = whileCondLabel } );
+						ces.Discharge();
+
+						CodeEmission.Emit.EmitLogical(this, ces, cond, whileTrueLabel, whileEndLabel);
+						ces.Discharge();
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = whileTrueLabel } );
+						ces.Discharge();
+						local CodeBlock whileBlock = new CodeBlock(null, block, block.LocalIndex);
+						whileBlock.SetFlowControlLabels(whileEndLabel, whileCondLabel, whileStmt.label);
+
+						CompileCodeBlock(ces, whileBlock, whileStmt.block);
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = whileCondLabel } );
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = whileEndLabel } );
+						ces.Discharge();
+					}
+					case(typeof(DoLoopNode)):
+					{
+						local DoLoopNode doStmt = stmt as DoLoopNode;
+
+						local string lbl = ces.CreateLabel();
+						local string whileTrueLabel = lbl + "_whiletrue";
+						local string whileEndLabel = lbl + "_whileend";
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = whileTrueLabel } );
+						ces.Discharge();
+						local CodeBlock whileBlock = new CodeBlock(null, block, block.LocalIndex);
+						whileBlock.SetFlowControlLabels(whileEndLabel, whileTrueLabel, doStmt.label);
+
+						CompileCodeBlock(ces, whileBlock, doStmt.block);
+
+						if(doStmt.condition != null)
+						{
+							local IValueExpression cond = CompiledExprToBoolean(stmt, CompileExpression(doStmt.condition, block, true).ToValues(stmt));
+							CodeEmission.Emit.EmitLogical(this, ces, cond, whileTrueLabel, whileEndLabel);
+							ces.Discharge();
+						}
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = whileEndLabel } );
+						ces.Discharge();
+					}
+					case(typeof(IfBlockNode)):
+					{
+						local IfBlockNode ifStmt = stmt as IfBlockNode;
+						local string lbl = ces.CreateLabel();
+						local string ifTrueBlock = lbl + "_iftrue";
+						local string ifFalseBlock = lbl + "_iffalse";
+						local string ifEndBlock = lbl + "_ifend";
+
+						local IValueExpression cond = CompiledExprToBoolean(stmt, CompileExpression(ifStmt.condition, block, true).ToValues(stmt));
+
+						// Evaluate
+						CodeEmission.Emit.EmitLogical(this, ces, cond, ifTrueBlock, ifFalseBlock);
+
+						// Discharge conditional temporaries
+						ces.Discharge();
+
+						// Emit true statements
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = ifTrueBlock } );
+						ces.Discharge();
+						local CodeBlock trueBlock = new CodeBlock(null, block, block.LocalIndex);
+						CompileCodeBlock(ces, trueBlock, ifStmt.block);
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = ifEndBlock } );
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = ifFalseBlock } );
+						ces.Discharge();
+
+						// Emit false statements
+						if(ifStmt.elseBlock != null)
+						{
+							local CodeBlock falseBlock = new CodeBlock(null, block, block.LocalIndex);
+							CompileCodeBlock(ces, falseBlock, ifStmt.elseBlock);
+						}
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = ifEndBlock } );
+						ces.Discharge();
+					}
+					case(typeof(SwitchBlockNode)):
+					{
+						local SwitchBlockNode switchStmt = stmt as SwitchBlockNode;
+						if(switchStmt.cases.Length == 0)
+							Utility.CError(stmt, ErrorCode.SwitchWithNoCases);
+
+						// Reduce to one value
+						local IValueExpression valueExpr = AdjustValueCount(CompileExpression(switchStmt.value, block, true).ToValues(stmt), stmt, 1);
+						local VType valueVType = valueExpr.vtams[0].vType;
+
+						// Convert the value expression to a pointer or value
+						local AccessMode vAccessMode = valueVType.IsRefStruct ? AccessMode.CP : AccessMode.R;
+						valueExpr = ConvertExpression(stmt, valueExpr, new VTAMCollection(new VTAM { vType = valueVType, accessMode = vAccessMode}));
+
+						local largeuint defaultBlock;
+						local bool hasDefault = false;
+						local List:<largeuint> valueBlocks = new List:<largeuint>();
+
+						local string defaultInstanceDef = "{\n";
+
+						local VType switchType = valueVType;
+
+						if(!this.gst.ContainsKey("Core.Object"))
+							throw UnresolvedExpressionSignal.instance;
+
+						local VType objectST = this.gst["Core.Object"] as VType;
+
+						if(valueVType.longName == "Core.nullreference")
+							switchType = objectST;
+
+						// Try each value
+						foreach(SwitchCaseNode caseNode, largeuint blockIndex in switchStmt.cases)
+						{
+							foreach(ExpressionNode expr in caseNode.expressions)
+							{
+								if(expr is DefaultCaseNode)
+								{
+									if(hasDefault)
+										Utility.CError(caseNode, ErrorCode.MultipleSwitchDefaults);
+									defaultBlock = blockIndex;
+									hasDefault = true;
+								}
+								else
+								{
+									valueBlocks.Add(blockIndex);
+
+									local IValueExpression caseValueExpr = CompileExpression(expr, block, true).ToValues(expr);
+									local IValueExpression exprAdjusted = AdjustValueCount(caseValueExpr, caseNode, 1);
+									local IValueExpression exprConverted;
+
+									local MatchLevel matchability = Utility.CastMatchability(exprAdjusted.vtams[0].vType, valueVType, false);
+									if(matchability == MatchLevel.Polymorphic)
+									{
+										switchType = objectST;
+										exprConverted = exprAdjusted;
+									}
+									else if(matchability == MatchLevel.Direct && exprAdjusted.vtams[0].accessMode == AccessMode.R)
+										exprConverted = exprAdjusted;
+									else
+										exprConverted = ConvertExpression(caseNode, exprAdjusted, new VTAMCollection(new VTAM { vType = valueVType, accessMode = AccessMode.R }), false, false);
+
+									local string initValue;
+									if(exprConverted is Constant)
+									{
+										// Convert to an initialization value
+										local HashSet:<string> depSet = new HashSet:<string>();
+										local List:<largeuint> dims = new List:<largeuint>();
+										initValue = GetInitializationValue(valueVType, exprConverted, false, 1, "!ERR_", depSet, dims, false, caseNode);
+									}
+									else if(exprConverted is StaticInstance && valueVType.IsObjectReference)
+										initValue = (exprConverted as StaticInstance).longName;
+									else
+										Utility.CError(caseNode, ErrorCode.NonConstantSwitchCase);
+
+
+									defaultInstanceDef = defaultInstanceDef + initValue + ",\n";
+								}
+							}
+						}
+
+						defaultInstanceDef = defaultInstanceDef + "}\n";
+
+						if(valueBlocks.Length == 0)
+							Utility.CError(switchStmt, ErrorCode.SwitchCaseWithNoCases);
+
+						local MethodObject blMethod = Utility.BlockMethod(block);
+						blMethod.numCaseCollections++;
+						local string caseInstanceName = blMethod.longName + "/cases_" + blMethod.numCaseCollections;
+
+						// Find or create an array of the values
+						local string arrayCode = Utility.ArrayOfTypeCode(1, true);
+						local ArrayOfTypeObject aot;
+
+						if(switchType.arraysOf.ContainsKey(arrayCode))
+							aot = switchType.arraysOf[arrayCode];
+						else
+						{
+							// Create and compile it
+							aot = new ArrayOfTypeObject(this, switchType, 1, true, stmt);
+							switchType.arraysOf[arrayCode] = aot;
+
+							this.CompileTypeShells();
+							aot.Compile(this);
+						}
+
+						// Create the default instance
+						new DefaultInstance(this, aot, defaultInstanceDef, caseInstanceName, new largeuint[] { valueBlocks.Length }, false);
+
+						local string lbl = ces.CreateLabel();
+						local string caseLabel = lbl + "_case_";
+						local string endLabel = lbl + "_switchend";
+
+						// Emit the switch lookup
+						CodeEmission.Emit.EmitValues(this, ces, valueExpr, false);
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Switch, int1 = valueBlocks.Length, res1 = caseInstanceName } );
+						ces.Pop();
+
+						foreach(largeuint blockIdx, largeuint idx in valueBlocks)
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Case, str1 = caseLabel + blockIdx } );
+
+						// Emit the default case jump
+						if(hasDefault)
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = caseLabel + defaultBlock } );
+						else
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = endLabel } );
+						ces.Discharge();
+
+						// Emit each case
+						foreach(SwitchCaseNode caseBlockNode, largeuint caseIndex in switchStmt.cases)
+						{
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = caseLabel + caseIndex } );
+							ces.Discharge();
+							local CodeBlock caseBlock = new CodeBlock(null, block, block.LocalIndex);
+							caseBlock.SetFlowControlLabels(endLabel, null, caseBlockNode.label);
+
+							CompileCodeBlock(ces, caseBlock, caseBlockNode.block);
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = endLabel } );
+							ces.Discharge();
+						}
+						// Finish
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = endLabel } );
+						ces.Discharge();
+					}
+					case(typeof(ForLoopNode)):
+					{
+						local ForLoopNode forStmt = stmt as ForLoopNode;
+						local string lbl = ces.CreateLabel();
+						local string condLabel = lbl + "_forcond";
+						local string iterationLabel = lbl + "_foriter";
+						local string bodyLabel = lbl + "_forbody";
+						local string endLabel = lbl + "_forend";
+
+						local CodeBlock forMainBlock = new CodeBlock(null, block, block.LocalIndex);
+						forMainBlock.SetFlowControlLabels(endLabel, iterationLabel, forStmt.label);
+
+						CompileCodeBlock(ces, forMainBlock, forStmt.initial, true);	// Hold open
+
+						// Skip iteration initially
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = condLabel } );
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = iterationLabel } );
+						ces.Discharge();
+						local CodeBlock forIterBlock = new CodeBlock(null, forMainBlock, forMainBlock.LocalIndex);
+						CompileCodeBlock(ces, forIterBlock, forStmt.iteration);
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = condLabel } );
+						ces.Discharge();
+
+						if(forStmt.condition != null)
+						{
+							local IValueExpression cond = CompiledExprToBoolean(stmt, CompileExpression(forStmt.condition, forMainBlock, true).ToValues(stmt));
+							CodeEmission.Emit.EmitLogical(this, ces, cond, bodyLabel, endLabel);
+						}
+						ces.Discharge();
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = bodyLabel } );
+						ces.Discharge();
+						local CodeBlock forBodyBlock = new CodeBlock(null, forMainBlock, forMainBlock.LocalIndex);
+						CompileCodeBlock(ces, forBodyBlock, forStmt.block);
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = iterationLabel } );
+
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = endLabel } );
+						ces.Discharge();
+
+						// Close and release anything from the initializer block
+						ces.CloseCodeBlock(forMainBlock);
+					}
+					case(typeof(ForEachLoopNode)):
+					{
+						CodeEmission.Emit.EmitForEachLoop(this, ces, stmt as ForEachLoopNode, block);
+					}
+					case(typeof(LocalDeclNode)):
+					{
+						CodeEmission.Emit.EmitLocalDecl(this, ces, stmt as LocalDeclNode, block);
+					}
+					case(typeof(UsingDeclNode)):
+					{
+						CodeEmission.Emit.EmitUsingDecl(this, ces, stmt as UsingDeclNode, block);
+					}
+					case(typeof(ReturnNode)):
+					{
+						CodeEmission.Emit.EmitReturn(this, ces, stmt as ReturnNode, block);
+					}
+					case(typeof(ReturnNode)):
+					{
+						CodeEmission.Emit.EmitReturn(this, ces, stmt as ReturnNode, block);
+					}
+					case(typeof(ContinueNode)):
+					{
+						local ContinueNode continueStmt = stmt as ContinueNode;
+						CodeEmission.Emit.EmitBlockJump(ces, CodeBlock.BlockLabelType.Continue, (continueStmt.label == null) ? (null as string) : (continueStmt.label.token.str), block, stmt);
+					}
+					case(typeof(BreakNode)):
+					{
+						local BreakNode breakStmt = stmt as BreakNode;
+						CodeEmission.Emit.EmitBlockJump(ces, CodeBlock.BlockLabelType.Continue, (breakStmt.label == null) ? (null as string) : (breakStmt.label.token.str), block, stmt);
+					}
+					case(typeof(CodeBlockStatementNode)):
+					{
+						local CodeBlockStatementNode cbStmt = stmt as CodeBlockStatementNode;
+						local CodeBlock cb = new CodeBlock(null, block, block.LocalIndex);
+						CompileCodeBlock(ces, cb, cbStmt.block);
+					}
+					case(typeof(AssignNode)):
+					{
+						local AssignNode assignStmt = stmt as AssignNode;
+						local MultipleValues left = CompileExpressionList(assignStmt.destinations, block, false);
+						local IValueExpression right = CompileExpressionList(assignStmt.sources, block, true);
+
+						right = AdjustValueCount(right, stmt, left.vtams.Length);
+
+						CodeEmission.Emit.EmitAssign(this, ces, left, right, block, stmt);
+					}
+					case(typeof(IncrementalOperateNode)):
+					{
+						local IncrementalOperateNode ioStmt = stmt as IncrementalOperateNode;
+						local Constant right = ConstantOfType("Core.byte", "1", Constant.Signal.Value);
+
+						CodeEmission.Emit.EmitOperateAndAssign(this, ces, ioStmt.destination, new PrecompiledNode(stmt.codeLocation, right), block, ioStmt);
+					}
+					case(typeof(OperateAndAssignNode)):
+					{
+						local OperateAndAssignNode oaaStmt = stmt as OperateAndAssignNode;
+						local IValueExpression right = CompileExpression(oaaStmt.source, block, true).ToValues(stmt);
+
+						CodeEmission.Emit.EmitOperateAndAssign(this, ces, oaaStmt.destination, new PrecompiledNode(stmt.codeLocation, right as ICObject), block, oaaStmt);
+					}
+					case(typeof(ExpressionStatementNode)):
+					{
+						local ExpressionStatementNode elStmt = stmt as ExpressionStatementNode;
+						local IValueExpression expr = CompileExpressionList(elStmt.expressions, block, true);
+						foreach(VTAM vtam in expr.vtams)
+						{
+							if(vtam.accessMode != AccessMode.R && vtam.accessMode != AccessMode.CP)
+								Utility.CError(stmt, ErrorCode.ExpressionStatementIsVariable);
+						}
+
+						CodeEmission.Emit.EmitValues(this, ces, AdjustValueCount(expr, stmt, 0, true), false);
+					}
+					case(typeof(ThrowNode)):
+					{
+						local ThrowNode throwStmt = stmt as ThrowNode;
+						local IValueExpression expr = CompileExpression(throwStmt.expression, block, true).ToValues(stmt);
+						expr = AdjustValueCount(expr, stmt, 1);
+
+						if(this.gst.ContainsKey("Core.Exception"))
+							throw UnresolvedExpressionSignal.instance;
+
+						local VType exceptionType = this.gst["Core.Exception"] as VType;
+						expr = ConvertExpression(stmt, expr, new VTAMCollection(new VTAM { vType = exceptionType, accessMode = AccessMode.R }), false, false );
+
+						CodeEmission.Emit.EmitValues(this, ces, expr, false);
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Throw } );
+						ces.Pop();
+					}
+					case(typeof(TryBlockNode)):
+					{
+						local TryBlockNode tryStmt = stmt as TryBlockNode;
+						local string lbl = ces.CreateLabel();
+						local string catchLabel = lbl + "_catch";
+						local string endLabel = lbl + "_tryend";
+						local string finishLabel = lbl + "_tryfinish";
+						local GuaranteeOuterBlock guaranteeOuterBlock;
+						local GuaranteeInnerBlock guaranteeInnerBlock;
+						local CodeBlock tryCatchExternalBlock = block;
+						
+						if(tryStmt.finallyBlock == null && tryStmt.catchBlocks == null)
+							Utility.CError(stmt, ErrorCode.NoCatchOrFinally);
+
+						if(tryStmt.finallyBlock != null)
+						{
+							guaranteeOuterBlock = new GuaranteeOuterBlock(ces, null, block, block.LocalIndex);
+							guaranteeInnerBlock = guaranteeOuterBlock.StartGuaranteeInnerBlock(this, ces);
+							tryCatchExternalBlock = guaranteeInnerBlock;
+						}
+
+						if(tryStmt.catchBlocks != null)
+						{
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Try, str1 = catchLabel, str2 = endLabel } );
+							ces.Discharge();
+						}
+
+						local CodeBlock tryBlock = new CodeBlock(null, tryCatchExternalBlock, tryCatchExternalBlock.LocalIndex);
+						CompileCodeBlock(ces, tryBlock, tryStmt.block);
+
+						if(tryStmt.catchBlocks != null)
+						{
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = finishLabel } );
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = endLabel } );
+							ces.Discharge();
+
+							local VType[] catchTypes = new VType[tryStmt.catchBlocks.catchBlocks.Length];
+							local Dictionary:<VType,string> catchTypeLabels = new Dictionary:<VType,string>();
+							foreach(CatchBlockNode blk, largeuint cidx in tryStmt.catchBlocks.catchBlocks)
+							{
+								local string thisCatchLabel = catchLabel + "_" + cidx;
+								local CodeBlock catchBlock = new CodeBlock(null, tryCatchExternalBlock, tryCatchExternalBlock.LocalIndex);
+								local VType catchingType;
+								local LocalVariable catchParam = null;
+
+								if(blk.exceptionType != null)
+								{
+									local TypeReference tr = new TypeReference(this, blk.exceptionType, tryCatchExternalBlock, false);
+									tr.Compile(this);
+									local VType exceptType = tr.refType;
+									catchingType = exceptType;
+									if(!tr.isCompiled || !Utility.TypeIsException(exceptType))
+										Utility.CError(blk, ErrorCode.ThrowNonException);
+
+									catchParam = new LocalVariable(Utility.BlockMethod(tryCatchExternalBlock), exceptType, false, false);
+									catchBlock.CreateLocal(ces, catchParam, blk.exceptionName, false);
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = thisCatchLabel } );
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Catch, res1 = catchingType.longName } );
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.CreateLocal, res1 = catchingType.longName, str1 = blk.exceptionName.token.str } );
+								}
+								else
+								{
+									catchingType = this.gst["Core.Exception"] as VType;
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = thisCatchLabel } );
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Catch, res1 = "Core.Exception" } );
+									ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Pop } );
+								}
+								ces.Discharge();
+
+								if(catchTypeLabels.ContainsKey(catchingType))
+									Utility.CError(blk, ErrorCode.DuplicateCatch);
+
+								catchTypeLabels[catchingType] = thisCatchLabel;
+								catchTypes[cidx] = catchingType;
+
+								CompileCodeBlock(ces, catchBlock, blk.block);
+								ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = finishLabel } );
+
+								ces.Discharge();
+							}
+
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = catchLabel } );
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Catch, res1 = "Core.Exception" } );
+
+							Utility.Assert(catchTypes.Length == tryStmt.catchBlocks.catchBlocks.Length);
+							foreach(VType ct in catchTypes)
+								ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.TryCatch, str1 = catchTypeLabels[ct], res1 = ct.longName } );
+
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Throw } );
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = finishLabel } );
+							ces.Discharge();
+						}
+
+						if(tryStmt.finallyBlock != null)
+						{
+							guaranteeInnerBlock.Close(ces);
+
+							local CodeBlock finallyBlock = new CodeBlock(null, guaranteeOuterBlock, guaranteeOuterBlock.LocalIndex);
+							CompileCodeBlock(ces, finallyBlock, tryStmt.finallyBlock);
+							guaranteeOuterBlock.Close(ces);
+						}
+					}
+					case(typeof(MemberDeclStatementNode)):
+					{
+						local MemberDeclStatementNode mdStmt = stmt as MemberDeclStatementNode;
+						local MemberDeclNode mdNode = mdStmt.memberDecl;
+						local string declType = mdNode.declType.token.str;
+						if(!_constants.structuredTypeDeclTypes[declType])
+							Utility.Assert(false, "Unemittable member decl");
+
+						local MethodObject method = Utility.BlockMethod(block);
+						method.numPrivateTypes++;
+						local string privateTypeName = method.longName + "/privatetype" + method.numPrivateTypes;
+						local Namespace typeNamespace = new Namespace(null, privateTypeName, null);
+						typeNamespace.privateTypeName = privateTypeName;
+
+						local StructuredTypeObject uncompiledType = new StructuredTypeObject(new Namespace(typeNamespace, mdNode.name.token.str, null), block, mdNode.attribTags, mdNode);
+						block.InsertUnique(mdNode.name.token.str, uncompiledType, stmt);
+						uncompiledType.ns.createdBy = uncompiledType;
+
+						this.uncompiled.Add(uncompiledType);
+						this.CompileTypeShells();
+						uncompiledType.isPrivateType = true;
+					}
+					case(default):
+					{
+						Utility.Assert(false, "Unemittable statement type");
+					}
+				}
+				
+				ces.Discharge();
+			}
+
+			public function void CompileCodeBlock(notnull CodeEmission.CodeEmissionState ces, notnull CodeBlock block, notnull CodeBlockNode blockNode)
+			{
+				CompileCodeBlock(ces, block, blockNode, false);
+			}
+
+			public function void CompileCodeBlock(notnull CodeEmission.CodeEmissionState ces, notnull CodeBlock block, notnull CodeBlockNode blockNode, bool holdOpen)
+			{
+				ces.PushCodeLocation(blockNode.codeLocation);
+
+				foreach(StatementNode stmt in blockNode.statements)
+				{
+					ces.PushCodeLocation(stmt.codeLocation);
+					CompileStatement(ces, stmt, block);
+					ces.PopCodeLocation();
+					Utility.Assert(ces.OpstackIndex == 0);
+				}
+
+				if(!holdOpen)
+					ces.CloseCodeBlock(block);
+			}
+
+			public function void CompileMethodCode(notnull MethodObject m)
+			{
+				local CodeEmission.CodeEmissionState ces = new CodeEmission.CodeEmissionState();
+
+				local CodeBlockNode codeBlockNode = Apps.Common.Serialization.ReadObject(m.codeBlockCacheID, true) as CodeBlockNode;
+
+				local Scope memberLookupScope = m.definedByType.internalScope;
+				local LocalVariable thisLocal;
+
+				if(!m.isStatic)
+					memberLookupScope = new MemberLookupScope(this, memberLookupScope, m.definedByType);
+
+				local CodeBlock codeBlock = new CodeBlock(null, memberLookupScope, 0);
+				codeBlock.isRootLevel = true;
+				codeBlock.method = m;
+
+				// Create locals
+				foreach(MethodParameterObject param, largeuint idx in m.actualParameterList.parameters)
+				{
+					local VType paramType = param.type.refType;
+					local bool isPointer = false;
+
+					if(paramType is StructuredTypeObject && (paramType as StructuredTypeObject).IsRefStruct)
+						isPointer = true;
+
+					local bool isThis = (param.name.token.str == "this");
+					local bool isConstant = ((isPointer && param.isConst) || (isThis && !isPointer));
+
+					local LocalVariable l = new LocalVariable(m, paramType, isPointer, isConstant);
+					if(isThis)
+						thisLocal = l;
+
+					codeBlock.CreateLocal(ces, l, param.name, false);
+				}
+
+				if(!m.isStatic)
+				{
+					Utility.Assert(thisLocal != null);
+					(memberLookupScope as MemberLookupScope).thisLocal = thisLocal;
+				}
+
+				// Create an interior code block so that the parameters and return values don't get discharged
+				codeBlock = new CodeBlock(null, codeBlock, codeBlock.LocalIndex);
+
+				CompileCodeBlock(ces, codeBlock, codeBlockNode);
+
+				ces.PushCodeLocation(m.name.codeLocation);
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Terminate } );
+				ces.Discharge();
+				ces.PopCodeLocation();
+
+				m.compiledInstructions = ces.ExportInstructions();
+				m.compiledInstructions = CodeGeneration.CorrectBranches(m.compiledInstructions);
+
+				// Strip local info if we're not emitting debug info
+				if(!_copts.emitDebugInfo)
+				{
+					foreach(CodeEmission.PInstr instr, largeuint idx in m.compiledInstructions)
+					{
+						if(instr.op == CodeEmission.POp.CreateLocal || instr.op == CodeEmission.POp.AllocLocal)
+							instr.str1 = null;
+						m.compiledInstructions[idx] = instr;
+					}
+				}
+
+				// If this falls through to the end and there are no return args, return
+				local largeuint lastInstrIdx = m.compiledInstructions.Length - 1;
+				if(m.compiledInstructions[lastInstrIdx].op == CodeEmission.POp.Terminate)
+				{
+					if(m.returnTypes.typeReferences.Length == 0)
+					{
+						local CodeEmission.PInstr instr = m.compiledInstructions[lastInstrIdx];
+						instr.op = CodeEmission.POp.Return;
+						instr.int1 = 0;
+						m.compiledInstructions[lastInstrIdx] = instr;
+						CodeGeneration.LinkReturnJumps(m.compiledInstructions);
+					}
+					else
+						Utility.CError(m.name, ErrorCode.OrphanControlPath);
+				}
+			}
+
+			public function void CompileCode()
+			{
+				local List:<MethodObject> uncompiledCode = this.uncompiledCode;
+				this.uncompiledCode = new List:<MethodObject>();
+
+				foreach(MethodObject m in uncompiledCode)
+				{
+					local bool canCompile;
+
+					if(m.longName[0] == "#"[0])
+						canCompile = true;
+					else
+					{
+						foreach(string ns in _copts.includedNamespaces)
+						{
+							if(m.longName.Substring(0, ns.Length) == ns)
+							{
+								canCompile = true;
+								break;
+							}
+						}
+					}
+
+					if(canCompile)
+						CompileMethodCode(m);
+				}
+			}
+
+			public function void CompileAll()
+			{
+				CompileTypeShells();
+
+				while(this.uncompiledCode.Length > 0)
+					CompileCode();
+
+				local Dictionary:<string, ICObject> gstAdditions = new Dictionary:<string, ICObject>();
+				foreach(string k, Object v in this.gst)
+				{
+					if(v is StructuredTypeObject)
+					{
+						local StructuredTypeObject vst = v as StructuredTypeObject;
+						vst.defaultValue = GetStructuredTypeDefault(vst);
+						if(vst.defaultValue != null)
+							gstAdditions[vst.defaultValue.longName] = vst.defaultValue;
+					}
+				}
+
+				foreach(string k, ICObject v in gstAdditions)
+					this.gst[k] = v;
+			}
+		}
+	}
+}

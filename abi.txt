@@ -1,0 +1,3 @@
+RDX plugins and PCCM require that the RDX library can properly duplicate the system ABI behavior.  This is required because RDX types may be used by PCCM and plugins even if the types being used are from other domains.
+
+Currently, RDX supports two C++ ABIs: Microsoft and Itanium.  It does not support ABIs that reorder fields based on access, insert fields into non-tail padding space of base classes, or align fields beyond the minimum alignment necessary for the contained type.

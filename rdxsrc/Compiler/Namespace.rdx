@@ -1,0 +1,38 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class Namespace extends Scope implements ICObject
+		{
+			public property StructuredTypeObject createdBy;
+			public property bool isFromTemplate;
+			public property string name;
+			public property string prefix;
+			public property string privateTypeName;
+
+			public function void Initialize(Scope owner, string nsName, string nsPrefix)
+			{
+				(this as Scope).explicit:Initialize(owner);
+
+				this.name = nsName;
+				this.prefix = nsPrefix;
+			}
+
+			public function IValueExpression ToValues(ASTNode incriminate)
+			{
+				Utility.CError(incriminate, ErrorCode.ExpectedValueExpression, this.printableName);
+				return null;
+			}
+
+			public intercept function string printableName()
+			{
+				return "namespace";
+			}
+		}
+	}
+}

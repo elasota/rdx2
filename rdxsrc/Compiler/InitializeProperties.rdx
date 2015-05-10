@@ -1,0 +1,58 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class InitializeProperties extends ValueExpression implements IEmittable
+		{
+			public property LocalVariable localVar;
+			public property ASTNode incriminateNode;
+			public property PropertyInitializer const[] initializers;
+
+			public function void Initialize(LocalVariable localVar, const VTAMCollection vtams, ASTNode incriminateNode)
+			{
+				this.localVar = localVar;
+				this._vtams = vtams;
+				this.incriminateNode = incriminateNode;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				local LocalVariable temp = ces.AddTemporary(this.vtams[0].vType);
+				local long[] initIndexes = new long[initializers.Length];
+
+				foreach(PropertyInitializer i, largeuint idx in this.initializers)
+				{
+					local PropertyObject prop = i.dest.prop;
+					initIndexes[idx] = prop.propertyIndex;
+
+					local IValueExpression reduced = CompilerState.AdjustValueCount(i.src, i.incriminateNode, 1);
+					local VType targetVType = prop.typeOf.refType;
+					local AccessMode targetAccessMode = AccessMode.R;
+
+					if(targetVType.IsRefStruct)
+						targetAccessMode = AccessMode.CP;
+
+					local IValueExpression converted = CompilerState.ConvertExpression(i.incriminateNode, reduced, new VTAMCollection( new VTAM { vType = targetVType, accessMode = targetAccessMode }), false, false );
+					CodeEmission.Emit.EmitValues(cs, ces, converted, false);
+				}
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.NewInstanceSet, int1 = temp.stackIndex, intVar = initIndexes, res1 = this.vtams[0].vType.longName } );
+				ces.Pop(initIndexes.Length);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.LocalRef, int1 = temp.stackIndex } );
+				ces.Push(1, temp);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "initialize properties";
+			}
+		}
+	}
+}
+

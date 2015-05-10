@@ -1,0 +1,91 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class PropertyObject extends CompilableObject implements INamedMember, IVisibilityControlled
+		{
+			private property string _name;
+			private property Visibility _visibility;
+			private property PropertyObject _alias;
+
+			public property StructuredTypeObject definedByType;
+			public property TypeReference typeOf;
+			public property TokenNode nameNode;
+			public property bool isConst;
+			public property bool mustBeConst;
+			public property bool isStatic;
+			public property largeuint propertyIndex;
+
+
+			public function void Initialize(CompilerState cs, StructuredTypeObject definedByType, TypeReference typeOf, Visibility visibility, bool isConst, bool mustBeConst, TokenNode name)
+			{
+				this._visibility = visibility;
+				this._name = (name == null) ? (null as string) : name.token.str;
+				this._incriminateNode = name;
+
+				this.definedByType = definedByType;
+				this.typeOf = typeOf;
+				this.nameNode = name;
+				this.isConst = isConst;
+				this.mustBeConst = mustBeConst;
+
+				cs.uncompiled.Add(this);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				if(!this.typeOf.isCompiled || !this.definedByType.isCompiled)
+					return false;
+				if(this.typeOf.refType.longName == CompilerConstants.varyingType())
+					Utility.CError(this.nameNode, ErrorCode.VaryingProperty);
+				//p.longName = p.definedByType.longName.."/properties/"..p.name
+				FinishCompile();
+				return true;
+			}
+
+			public function PropertyObject Privatize()
+			{
+				local PropertyObject p = this;
+				if(p._alias != null)
+					p = p._alias;
+
+				local PropertyObject newPO = new PropertyObject {
+					_visibility = p.visibility,
+					_name = p.definedByType.longName + "." + p._name,
+					_alias = p,
+
+					typeOf = p.typeOf,
+					definedByType = p.definedByType,
+					nameNode = p.nameNode,
+				};
+				newPO.FinishCompile();
+				return newPO;
+			}
+
+			public intercept function string name()
+			{
+				return _name;
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "property";
+			}
+		}
+	}
+}

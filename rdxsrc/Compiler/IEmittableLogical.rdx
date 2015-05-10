@@ -1,0 +1,15 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface IEmittableLogical
+		{
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel);
+		}
+	}
+}

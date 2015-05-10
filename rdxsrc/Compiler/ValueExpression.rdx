@@ -1,0 +1,22 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class ValueExpression extends SimpleCObject implements IValueExpression
+		{
+			protected property VTAMCollection _vtams;
+
+			public intercept function VTAMCollection vtams()
+			{
+				return _vtams;
+			}
+
+			public abstract virtual intercept function string printableName();
+		}
+	}
+}

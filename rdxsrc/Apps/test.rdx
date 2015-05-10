@@ -1,0 +1,42 @@
+using Core;
+using Core.Collections;
+using Core.RDX;
+using Apps.Common;
+
+namespace Apps
+{
+	namespace MyApp
+	{
+		public interface HelloWorldPrinter
+		{
+			public function void PrintHelloWorld();
+		}
+
+		public class MyHelloWorldPrinter implements HelloWorldPrinter
+		{
+			public function void PrintHelloWorld()
+			{
+				Console.WriteLine("Hello World");
+			}
+		}
+
+		public class MyApp
+		{
+			public static function void PassHWP(HelloWorldPrinter hwp)
+			{
+				local bool cmp = (hwp == null);
+				hwp.PrintHelloWorld();
+			}
+
+			public static function int main(string const[] args)
+			{
+				local HelloWorldPrinter hwp = new MyHelloWorldPrinter();
+				PassHWP(hwp);
+				hwp.PrintHelloWorld();
+
+				Console.WriteLine("Hello World");
+				return 0 as int;
+			}
+		}
+	}
+}

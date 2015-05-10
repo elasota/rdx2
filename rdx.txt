@@ -1,0 +1,587 @@
+SECURITY:
+
+"private" and "protected" access descriptors only affect the compiler.  The RDX runtime does not respect these keywords and will not restrict access based on them.  If you need to hide data from RDX code, it is recommended that you use the native data facilities.
+
+
+OVERRIDABLE METHODS:
+
+There are three ways that you can declare a function:
+
+- No tags: Method does not override a parent class method and will be invoked explicitly
+- final:   Method does override a parent class method and will be invoked dynamically
+- virtual: Method will be invoked dynamically.  You can use this tag regardless of whether the method overrides a parent or not.
+- abstract virtual: Method will be invoked dynamically, but can not be invoked on this class.
+
+
+EXCEPTIONS:
+
+throw always requires a parameter, so you need to catch Exception to rethrow.
+
+
+TYPEOF:
+
+Typeof works in two different ways:
+Used on an expression, it will convert to the type specifier of the first expression.
+Used on a type specifier, it will convert to an expression of type StructuredType or ArrayOfType, allowing you to access the type information.
+
+The type of "null" is Core.Object.
+
+
+CORE.NULLREFERENCE:
+
+Do not use the Core.nullreference type.  It is an internal compiler type and had different properties during compilation than it does at runtime.  Using it may cause your compiled program to be unusable.
+
+
+MULTIPLE RETURN VALUES:
+
+Functions can return multiple values.  Multi-value results can be used in assignments and as part of parameter lists.  In any other situation, all parameters after the first will be dropped. i.e.
+
+public function int, int SplitFloat(float v);
+public function void DoStuffWithInt(int v);
+public function void DoStuffWithSplitFloat(int m, int x);
+
+public function void DoStuff(float v)
+{
+    local int mantissa, exponent = SplitFloat(v);
+    local int m, x;
+
+    null, x = SplitFloat(v);	// Assigning to NULL discards the value
+    m = SplitFloat(v);          // Assignments auto-truncate
+
+    DoStuffWithSplitFloat(SplitFloat(v));   // Multiple-value functions convert into multiple parameters
+    DoStuffWithInt( (SplitFloat(v)) );      // () truncates to single value
+}
+
+
+
+TYPEDEFS:
+
+public class MyClass
+{
+    public typedef StrIntHash = HashMap:<string,int>;
+    public property StrIntHash myHashMap;
+}
+
+
+Typedefs alias the type specifiers they refer to.
+
+
+SUPER CALLS:
+
+You can disable virtual calling by using the "explicit" modifier:
+
+(this as myParentClass).explicit:Initialize(myParameters);
+
+
+MULTIPLE STATEMENTS IN FOR LOOPS:
+
+You need to format these as code blocks.  i.e.:
+
+for( { local int i = 0; local int j = 0 }; i < 4; i += 1 )
+   ...
+
+
+DO LOOPS/BLOCKS:
+
+RDX allows "do" loops with or without the condition.  If there is no condition, then the "do" loop will always end when it finishes.  "do" blocks may be labeled.
+
+A do/while block is formatted as;
+
+do <code block> while(condition);
+
+A do/while block with no condition is formatted as:
+
+do <code block>
+
+Note that "while(condition);" is not a legal statement in RDX, so there is no ambiguity.
+
+
+GOTO:
+
+RDX does not support "goto".  Loop labeling and conditionless "do" blocks provide the same functionality.
+
+
+LOOP LABELING:
+
+You can break or continue loops by labeling them.  Labels go after the loop declaration.  i.e.
+
+while:myloop(true)
+{
+	while(true)
+	{
+		break myloop;
+	}
+}
+
+
+SWITCH STATEMENTS:
+
+RDX's switch statements are formatted as:
+
+switch(<expression>)
+{
+	case[:label](<value>, <value>):
+		code block
+}
+
+i.e.:
+
+switch(myValue)
+{
+	case(1):
+	{
+		// Do things here
+	}
+	// This will not fall through
+	case:myCase(2):
+	{
+		// Do other things here
+		while(true)
+		{
+			break myCase;	// Breaks out of case
+		}
+		Console.WriteLine("Never visible");
+	}
+	default:
+	{
+		// Default case
+	}
+}
+
+Switch statements may only contain constant expressions.
+
+
+
+
+CONSTRUCTORS:
+
+Constructors call the "Initialize" method.  Constructors are only allowed on reference structs and classes.
+
+You can also instanciate types using their properties:
+
+a = new vec3 { x = 1.0, y = 2.0 }
+
+
+RESOURCES:
+
+Resources are distinct object instances.  You may modify the contents of a resource, including overwriting struct and data types, but you may not reassign them to other instances.  Because interfaces may not be instanciated, you may not create resources of interface types.
+
+Resource initialization follows all other initialization rules, except that you can not initialize a resource as a reference to another resource and you may only initialize it with exactly the same type;
+
+Note that because strings are reference types, you may not assign or initialize resources with strings.  They must be contained within another type of object.
+
+
+INITIALIZERS:
+
+Initializers do not allow code.  Certain types must always be initialized a specific way:
+- Numeric, character, strings, and enum types: From a constant
+- Arrays, classes: From a property constructor or static instance
+- Interfaces: From a static instance
+- Structs: From a property constructor
+
+Arrays and classes created via initialization are immutable.
+
+
+You can define initializers in either of two ways:
+
+public property int x = 4;
+public property int y = 5;
+
+... or ...
+
+default x = 4, y = 5;
+
+
+Using the "default" syntax allows you to assign values to properties inherited from the parent class.
+
+
+
+INTERFACES:
+
+Methods declared by interfaces must not use static or virtual specifiers.  They will be automatically made virtual.  Intercepts are allowed in interfaces, properties are not.
+
+Interface references are pointers to a property (of type System.RDX.InterfaceMarker) which contain an offset to the head of the object and an offset into the interface list.  The vtable offset is set by the interface referencing the property.  Interface implementation properties with no interface implementation referencing them result in a verification failure.
+
+
+REFLECTION:
+
+"typeof" will return the type of an expression, returning either a value of either StructuredType or ArrayOfType.  It is not polymorphic.  For polymorphic types, use GetType.
+
+You can delegate static methods and then cast the delegate back to Core.RDX.Method.
+
+
+CONTAINERS:
+
+RDX does not support boxing.  Use the Container template.
+
+
+PARAMETER COERCION:
+
+When methods are called, the RDX compiler will attempt to automatically attempt to convert the parameters to match any overloads.  The first tier with a single overload matching is the one chosen.  If the first tier with any valid overloads contains multiple valid overloads, a compiler error is produced.  The coerce priority also governs how casts work.  For example, if you attempt to define a coerce method that returns a parent type, it will be ignored because direct-priority casts take priority.
+
+The tiers are:
+- Exact: Exact match of parameter types
+- Direct: From a class to a parent class
+- Lossless: Using a "promote" method
+- Lossy: Using a "coerce" method.  Conversions of this type throw warnings.
+- Polymorphic: From a class to a class that inherits the class being cast from, or an interface to a class that implements that interface
+- Unmatchable: Anything else (causes errors if attempted)
+
+Several types innately have direct conversion:
+- Array types directly convert to Core.Array and Core.Object
+- Delegate types directly convert to Core.RDX.Method and Core.Object
+
+
+
+HASHING:
+
+To retrieve a hash for an object, use generatehash(expression).  Hashes are guaranteed to be identical when performed on data types containing the same contents and reference types when the same object is referenced.
+
+
+ENUMERATIONS:
+
+Enumerants are the type of the enumerator.  The only operation that can be performed on them is casting to int, which can be implicit.  You can not perform arithmetic operations on them without first casting to int.  Enumerants can access other enumerants if they appear earlier in the list.
+
+i.e.
+
+public enum MyEnum
+{
+	SomeEnumerant1 = 1,
+}
+
+a = MyEnum.SomeEnumerant + 1;		// Not allowed
+a = (MyEnum.SomeEnumerant as int) + 1;	// Allowed
+a = 1 + MyEnum.SomeEnumerant;		// Allowed
+
+
+DELEGATES:
+
+Delegates alias to types determined by their parameter and return types.  Methods must be explicitly delegated using the cast operator and only static methods are delegable:
+
+public delegate void MyDelegate(string s);
+public static function void MyFunc(string s);
+
+public function void MyOtherFunc()
+{
+	local MyDelegate md = MyFunc as MyDelegate;
+	md("some text");
+}
+
+Delegate types may be directly converted to Core.RDX.Method and Core.Object.  They may not be converted to other delegates unless the parameter and return type lists match exactly.
+
+
+
+INTERCEPTS:
+
+public virtual intercept function int MyProperty();
+public virtual intercept function void MyProperty(int v);
+public virtual intercept function void MyProperty(float v);
+
+public function int MyFunc(int a, float b)
+{
+    MyProperty = a;    // Calls MyProperty(int v)
+    MyProperty = b;    // Calls MyProperty(float v)
+    return MyProperty; // Returns the result of MyProperty()
+}
+
+
+INDEX INTERCEPTS:
+
+public function void __setindex(int v, int atIndex);
+public function int __index(int v);
+
+public function int MyFunc(int idx, int v)
+{
+	this[idx] = v;		// Calls __setindex(v, idx)
+	return this[idx];	// Calls __index(idx)
+}
+
+Note that operate-and-assign operators will cause the index parameters to be converted twice.  This is because RDX does not require __index and __setindex to have the same parameter types for indexes.
+
+
+OPERATOR OVERLOADING:
+
+public function int __add(int v);
+
+public function int AddInteger(int i)
+{
+	return this + i;	// Equivalent to this.__add(i)
+}
+
+
+Operator overloads do not support multiple-value returns.
+
+
+
+CONVERSION:
+
+public byval struct short
+{
+    public native promote int;
+}
+public byval struct float
+{
+    public native coerce int;
+}
+
+public virtual intercept function void MyProperty(int v);
+
+public function void MyFunc(int a, short b, float v)
+{
+    MyProperty = a;    // Passes a
+    MyProperty = b;    // Converts b
+    MyProperty = c;    // Converts c and warns
+}
+
+
+OPERATE-AND-ASSIGN:
+
+Operate-and-assign operations are statements in RDX.  They do not return values and using them as expressions will result in an error.
+
+
+ITERATORS:
+
+Foreach has the syntax:
+
+foreach(<local decls> in <value>)
+
+It iterates over an array or a value it can get an enumerator from.  If <value> is an array, then the local decls can receive a value convertable from the array's interior type and a largeint index.
+
+For example, you can iterate over an array and access the index by doing:
+
+foreach(string str, int index in myStringArray)
+
+If <value> is not an array, then the value's .GetEnumerator() method is called.  The enumerator can either be an array, in which case it has the same behavior as iterating over the array itself, or it can be a value with two additional methods: .HasNext(), which returns "true" if the iterator has any additional values, and .GetNext() which returns the next values.
+
+
+GetNext may return multiple values.  For example, you could do something like:
+
+public struct MyHashTableEnumerator
+{
+    public function string,object GetNext();
+    public function bool HasNext();
+}
+
+public class MyHashTable
+{
+    public function MyHashTableEnumerator GetEnumerator();
+}
+
+public static function void IterateHashTable(MyHashTable ht)
+{
+    foreach(string key, object value in ht)
+    {
+        ...
+    }
+}
+
+
+
+VIRTUAL MACHINE INFORMATION:
+The runtime is divided into two key data storage segments: The opstack and locals.
+
+Locals can only be allocated when the opstack is completely empty
+Opstack values are assigned once and used once, except for "clone" and "trycast."  Pointers never reference the opstack.
+
+An additional construct called a "barrier" allows flow control during evaluation.  The opstack can not pop past a barrier, but returns will exit the barrier instead of the function and flow control ops can be performed as long as only the barrier is on top of the stack after the flow control operation.  Locals can also be accessed regardless of barrier presence.
+
+
+Opstack value types:
+- VALUE:     Reference to a class type or contents of a struct
+- POINTER:   Combination of an object reference and an offset into the object.
+             - Immutable if passed in as a parameter
+- LOCALREF:  Reference to a local.
+
+
+
+Safety checks:
+- Signature matches in general: Identical methods are always a match, otherwise the "this" parameter offset must match and must be compatible with the type implementing the function.
+- Interfaces need to align in the vtable and the aligned functions must match
+- Interface implementations need to match parent class, in order
+- Properties and vtable need to align with the parent class
+- Only classes can implement or inherit, they must only inherit non-final classes and implement interfaces
+- Classes with vtables containing instructionless non-native methods may not be instanciated by resources or via "new"
+- Instructionless non-native methods must be marked as isAbstract
+- Enumerations and interfaces may not contain properties
+- Jumps may not target a location inside an alloclocal/createlocal-->removelocal span unless the jump instruction is within that span
+- Classes may not define a VST entry as NULL if the parent has a function defined
+- Enumerations must define a zero value
+
+
+startbarrier <count> - Creates a control barrier from a previous number of stack values.  The stack values must be shells.  Jumps are only permitted to other instructions inside the barrier and the previous opstack is stored until the barrier exits.
+    - The stack values must be shells
+
+endbarrier - Exits the current barrier and restores the stack to its state before the barrier, with the barrier return values de-shelled.  The previous statement must be a "return."  The stack is restored to its state before the barrier.
+    - Opstack must be empty
+    - The statement before the endbarrier must be a return.
+
+try <catch label> <end try label> - Marks all instructions up to but not including the end try label as exception-handling and carries the exception to a target catch label if any exceptions occur.  Trys declared later will overwrite existing exception marks.
+    - Catch label must be a "catch" that catches Core.Exception
+    - Opstack must be empty and must not be within a barrier
+
+catch <type> - Pushes an empty object of the specified type and throws a Core.InvalidOperationException.  Targeted by "try" and "trycast" instructions to avoid the exception.
+    - Opstack must be empty and must not be within a barrier
+
+throw - Pops a value from the stack and throws it
+    - Value must be of the type Core.Exception
+    - Opstack must contain only the exception and must not be within a barrier
+
+trycast <type> <label> - Attempts to convert a Core.Exception on the top of the stack to another type.  If successful, carries the value to a target "catch" instruction.
+    - Instruction at target label must be a "catch" of the same type as the trycast
+    - Opstack must contain only the value being cast and must not be within a barrier
+    - Value must be a Core.Exception
+
+is <type> <label> - Checks if a value can be converted to another type.
+    - Opstack must be empty or barrier at the target instruction
+    - Opstack must be a single value followed by a barrier
+    - Value must be a reference type
+
+jump <label> - Jumps to another instruction
+    - Opstack must be empty or barrier
+    - Opstack must be empty or barrier at the target instruction
+
+jumpif <method> <label> - Jumps to a label if the intrinsic returns true
+    - Method must be an intrinsic
+    - Method signature must match, return parameter must be System.bool
+    - OPSTACK must be parameters followed by a barrier
+    - Opstack must be empty or barrier at the target instruction
+
+jumpifnot <method> <label> - Jumps to a label if the intrinsic returns false
+    - Method must be an intrinsic
+    - Method signature must match, except for return parameter
+    - OPSTACK must be parameters followed by a barrier
+    - Opstack must be empty or barrier at the target instruction
+
+jumpiftrue <label> - Pops a boolean value from the stack, jumps if true
+    - Opstack must be empty or barrier at the target instruction
+    - Opstack must be parameters followed by a barrier
+
+jumpiffalse <label> - Pops a boolean value from the stack, jumps if false
+    - Opstack must be empty or barrier at the target instruction
+    - Opstack must be parameters followed by a barrier
+
+jumpifequal <label> - Pops two values from the stack and compares them.  If they are equal, jumps to the specified label
+    - Opstack must be empty or barrier at the target instruction
+    - Opstack must be parameters followed by a barrier
+    - One of the types must be directly convertible to the other
+
+jumpifnotequal <label> - Pops two values from the stack and compares them.  If they are not equal, jumps to the specified label
+    - Opstack must be empty or barrier at the target instruction
+    - Opstack must be parameters followed by a barrier
+    - One of the types must be directly convertible to the other
+
+call <method> - Calls a method.  De-shells return values.
+    - Method must be System.RDX.Method
+    - Method signature must match, values must be of the expected type (i.e. POINTER to STRUCT is not allowed)
+
+callvirtual <method> - Calls a virtual method from either an object or interface.  De-shells return values.
+    - "this" parameter specified by the method must be a object reference
+    - Virtual index must match a valid value that can call the virtual method
+    - Method signature must match
+
+alloclocal <type> - Allocates a local of the specified type.
+    - OPSTACK must be empty
+
+createlocal - Allocates a local of the specified type, pops the value on the top of the stack and moves it to the new local
+    - OPSTACK must be empty below the local
+    - Top of stack must be a value
+
+removelocal - Removes a local
+    - OPSTACK must be empty
+
+pushempty <type> - Pushes function return space allocated for the specified type
+    - May not push return space for empty values
+
+newinstance <type> - Pushes an instance of a class or array type containing the default values.
+    - If a class, must not be immutable and must not
+    - Must be a class or array type
+
+null - Pushes an OBJECTREF equal to NULL
+
+pinlocal - Pops a localref from the stack and pushes a pointer to it
+    - Local must be a struct and must not be a pointer (i.e. byref struct parameter)
+
+arrayindex - Pops array indexes and an object reference from the top of the stack, null-checks the reference, and produces a pointer.
+    - Type of the top object must be an ArrayOfType
+
+property <property index> - Pops a struct pointer or objectref from the top of the stack and pushes a pointer to the specified property.
+    - If the top is a pointer, then this instruction may only follow a prop, pinl, or arrayindex operation.
+
+move - Pops a destination followed by a source from the stack and moves the value at the destination to the source.
+    - Source can be a pointer, non-pointer localref, or value.
+    - Destination must be a pointer or non-pointer localref
+
+load - Pops a pointer or localref from the stack and pushes the value contained by it on the stack.
+    - May not load pointers to reference structs
+
+clone <offset> <count> - Pushes a copy of objects offset from the top of the stack, which can be anything, including localrefs
+
+pop - Pops one argument from the opstack
+    - May not pop shells
+
+cast <type> - Pops an object reference from the top of the stack and converts it to another type.
+
+localref <local> - Pushes a LOCALREF to a specified local.
+
+return <number of values> - Exits the current method or barrier.  Pops the return values.
+   - Opstack must match the expected return types.
+   - Must be followed by a barrier or the end of the stack
+   - Return values may be pointers, localrefs (pointer or non-pointer), or values, but must not require conversion to the destination types.
+
+hash - Pops the value from the top of the stack and generates a hash based on its value, with the value being the contents of data types and the instance ID of reference types.
+
+res <resource> - If the specified resource is a reference type, pushes an OBJECTREF pointing to it.  If the specified resource is a data type, pushes a POINTER to the contents.
+
+constant <type> <value string> - Pushes a constant of the specified type containing the specified encoded string value
+
+switch <number of cases> <case array> - Pops a value from the stack and attempts to match it against a value from a specified case array.  The case array must have the same number of elements as the "number of cases" value.  The switch statement must be followed by as many "jump" statements as there are cases and the jump statements must have positive instruction offsets.
+   - Opstack must contain one value followed by the end of the stack
+   - The popped value must not be a constant null
+   - The popped value must have the same type as the array's contained type
+   - Must be followed by <number of cases> jump statements, all with with positive instruction offsets
+
+iteratearray <exit> <subindex count> - Pops three localrefs from the stack, plus one an additional localref if the subindex count is non-zero.  The first localref is the array, the second is the index, the third is the destination.  If the index is within the array bounds, copies the element at that index to the destination local and increments.  Also increments multiple locals starting with the subindex local such that the locals will be, in order, the dimension indexes of that element.  If not, jumps to the exit instruction.
+   - The array must be an array type value in the current frame
+   - The index must be a Core.largeint non-pointer local in the current frame
+   - The third must be a non-pointer local in the current frame able to be directly casted to from the array contents type
+   - The subindex local must be the first of multiple consecutive largeint locals, in a sequence as numerous as the subindex count
+   - Opstack must be empty after the localrefs
+
+COMPILER ERRORS:
+TBD, there are currently 106
+
+
+INTERNAL API:
+
+Nearly all operations in RDX require an OperationContext.  There should be exactly one OperationContext per active thread.  If a callback receives an OperationContext, it is expected to pass the same OperationContext to any further calls to the RDX API.
+
+Blocking threads with live OperationContexts in scope is generally not recommended.  Threads are considered active by RDX as long as their OperationContext is live unless the API blocks it internally.  Some operations such as serialization and garbage collection can be initiated by any thread and will not start until every other thread is considered blocked.  You can manually mark contexts as inactive by using the Idle and Wake functions, but you should never pass a sleeping OperationContext to RDX.  Wake will block on global operations.
+
+If you want to suspend an RDX thread, return RuntimeState::Suspended from a callback.  Otherwise, return the "timeout" value.  This will cause ExecuteTimeSlice to return with Suspended and will preserve the thread stack.
+
+The RDX internal compiler attempts to optimize tail calls.
+
+
+RDX can be compiled with 3 modes of error handling:
+- C++ exceptions:
+    Error code will be set on the OperationContext and the OperationContext will be thrown.
+
+- Set status and return:
+    Error code will be set on the OperationContext and the function will return without throwing an exception.
+
+- Continue execution
+    RDX will not perform any integrity checks.  You should only do this if you are certain that RDX will have enough resources available and that all of the data being loaded is valid and trustworthy.
+
+
+
+               Creates traces      Affects time slice timer
+calls          Yes                 Always
+throw          Yes                 Always if not to a local label with offset >= 1
+jumps          Yes                 If offset < 1
+arrayindex     Yes                 No
+null check     Yes                 No
+verifymutable  Yes                 No
+cast           Yes                 No
+newinstance    Yes                 No
+
+

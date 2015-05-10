@@ -1,0 +1,35 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class RecycledValues extends ValueExpression implements IEmittable
+		{
+			public property largeuint opstackIndex;
+
+			public function void Initialize(const VTAMCollection vtams, largeuint opstackIndex)
+			{
+				this._vtams = vtams;
+				this.opstackIndex = opstackIndex;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				local largeuint recycleStart = (ces.OpstackIndex - this.opstackIndex - 1);
+				local largeuint recycleCount = this._vtams.Length;
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Clone, int1 = recycleStart, int2 = recycleCount } );
+				ces.Clone(recycleStart, recycleCount);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "recycled values";
+			}
+		}
+	}
+}

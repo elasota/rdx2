@@ -1,0 +1,225 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class MethodObject extends CompilableObject implements ICallable, IVisibilityControlled
+		{
+			private property TokenNode _name;
+			private property TypeTuple _returnTypes;
+			private property bool _isAbstract;
+			private property ParameterList _parameterList;
+			private property Visibility _visibility;
+			private property largeuint _thisParameterIndex;
+			private property ParameterList _actualParameterList;
+
+			public property string grouping;
+			public property StructuredTypeObject definedByType;
+			public property TokenNode declType;
+			public property string codeBlockCacheID;
+			public property bool isStatic;
+			public property bool isVirtual;
+			public property bool isNative;
+			public property bool isIntercept;
+			public property bool isArrayIntercept;
+			public property bool isBranching;
+			public property bool isFinal;
+			public property bool isConst;
+			public property bool isLossless;
+			public property largeuint numPrivateTypes;
+
+			public property largeuint vftIndex;
+			public property bool isOverriding;
+
+			public property string signature;
+			public property string returnSignature;
+
+			public property largeuint numCaseCollections;
+			public property CodeEmission.PInstr[] compiledInstructions;
+
+			public function void Initialize(CompilerState cs, TokenNode name, string grouping, StructuredTypeObject definedByType,
+				TypeReference const[] returnTypes, ParameterList parameterList, Visibility visibility,
+				TokenNode declType, string codeBlockCacheID, bool isStatic, bool isVirtual, bool isAbstract, bool isNative,
+				bool isIntercept, bool isArrayIntercept, bool isBranching, bool isFinal, bool isConst)
+			{
+				this._name = name;
+				this._isAbstract = isAbstract;
+				this._returnTypes = new TypeTuple(cs, returnTypes);
+				this._parameterList = parameterList;
+				this._incriminateNode = name;
+
+				this.isBranching = isBranching;
+				this.isVirtual = isVirtual;
+				this.isNative = isNative;
+				this.isStatic = isStatic;
+				this.isIntercept = isIntercept;
+				this.isArrayIntercept = isArrayIntercept;
+				this.isFinal = isFinal;
+				this.isConst = isConst;
+				this.declType = declType;
+				this.grouping = grouping;
+				this.definedByType = definedByType;
+				this.codeBlockCacheID = codeBlockCacheID;
+				this.visibility = visibility;
+				this.numCaseCollections = 0;
+
+				this.numPrivateTypes = 0;
+
+				cs.uncompiled.Add(this);
+
+				if(codeBlockCacheID != null)
+					cs.uncompiledCode.Add(this);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local string longName;
+				if(!this.definedByType.isCompiled)
+					return false;
+				longName = this.definedByType.longName + "/" + this.grouping + "/" + this._name.token.str;
+
+				if(!this.returnTypes.isCompiled)
+					return false;
+				if(!this.parameterList.isCompiled)
+					return false;
+
+				this.signature = this.name.token.str;
+
+				local TokenType declTT = this.declType.token.tokenType;
+				if(declTT == TokenType.RW_Coerce || declTT == TokenType.RW_Promote)
+				{
+					this.isLossless = (declTT == TokenType.RW_Promote);
+					this.signature += this.returnTypes.prettyName;
+					longName += this.returnTypes.prettyName;
+				}
+				else
+				{
+					this.signature += this.parameterList.prettyName;
+					longName += this.parameterList.prettyName;
+				}
+
+				this.returnSignature = this.name.token.str + this.returnTypes.prettyName;
+
+				this._longName = longName;
+				FinishCompile();
+
+				// Find out what the actual parameters are, including self
+				// These aren't needed for the type resolution phase so it's not important that they be compiled when this finishes
+				local ParameterList actualParameterList;
+
+				if(this.isStatic)
+					actualParameterList = this.parameterList;
+				else
+				{
+					local TypeReference thisParameter = new TypeReference(this.definedByType);
+					thisParameter.Compile(cs);
+					Utility.Assert(thisParameter.isCompiled);
+
+					local largeuint thisParameterIndex = 1;
+
+					local List:<MethodParameterObject> actualParameters = new List:<MethodParameterObject>();
+
+					if(this.isIntercept && this.parameterList.parameters.Length == 1)
+						thisParameterIndex = 2;
+					if(this.isArrayIntercept)
+						thisParameterIndex = 2;
+
+					foreach(MethodParameterObject param, largeuint idx in this.parameterList.parameters)
+					{
+						local largeuint insertIdx = idx;
+						if(idx == thisParameterIndex - 1)
+							actualParameters.Add(null);
+
+						actualParameters.Add(param);
+					}
+
+					local TokenNode thisNameNode = new TokenNode(_name.token.codeLocation);
+					thisNameNode.token = new Token { codeLocation = _name.token.codeLocation, tokenType = TokenType.Name, str = _name.token.str };
+
+
+					local MethodParameterObject thisPLParam = new MethodParameterObject(thisParameter, thisNameNode, true, true);
+
+					if(thisParameter.refType.IsRefStruct)
+						thisPLParam.isConst = this.isConst;
+					else if(thisParameter.refType.IsObjectReference)
+					{
+						thisPLParam.isNotNull = true;
+						thisPLParam.isConst = true;
+					}
+
+					actualParameters[thisParameterIndex - 1] = thisPLParam;
+
+					this._thisParameterIndex = thisParameterIndex;
+
+					actualParameterList = new ParameterList(cs, actualParameters.ToArray());
+					actualParameterList.Compile(cs);
+					Utility.Assert(actualParameterList.isCompiled);
+				}
+
+				this._actualParameterList = actualParameterList;
+
+				foreach(MethodParameterObject p in actualParameterList.parameters)
+				{
+					Utility.Assert(p.type.refType.longName != null);
+					if(p.type.refType.longName == CompilerConstants.varyingType() && !this.isNative)
+						Utility.CError(this._name, ErrorCode.VaryingParameterInNonNative);
+				}
+				foreach(TypeReference t in this._returnTypes.typeReferences)
+					if(t.refType.longName == CompilerConstants.varyingType() && !this.isNative)
+						Utility.CError(this._name, ErrorCode.VaryingReturnType);
+
+				cs.gst[longName] = this;
+
+				return true;
+			}
+
+			public intercept function bool isAbstract()
+			{
+				return _isAbstract;
+			}
+
+			public intercept function TokenNode name()
+			{
+				return _name;
+			}
+
+			public intercept function TypeTuple returnTypes()
+			{
+				return _returnTypes;
+			}
+
+			public intercept function ParameterList actualParameterList()
+			{
+				return _actualParameterList;
+			}
+
+			public intercept function ParameterList parameterList()
+			{
+				return _parameterList;
+			}
+
+			public intercept function largeuint thisParameterIndex()
+			{
+				return _thisParameterIndex;
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "method";
+			}
+		}
+	}
+}

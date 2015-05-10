@@ -1,0 +1,26 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class DischargedIntercept extends ValueExpression
+		{
+			public property ObjectMethod objectMethod;
+
+			public function void Initialize(ObjectMethod objectMethod)
+			{
+				this.objectMethod = objectMethod;
+				this._vtams = new VTAMCollection(new VTAM { vType = VType.InterceptType, accessMode = AccessMode.I });
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "discharged intercept";
+			}
+		}
+	}
+}

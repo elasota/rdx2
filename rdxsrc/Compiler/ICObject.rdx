@@ -1,0 +1,16 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface ICObject
+		{
+			public function IValueExpression ToValues(ASTNode incriminate);
+			public intercept function string printableName();
+		}
+	}
+}

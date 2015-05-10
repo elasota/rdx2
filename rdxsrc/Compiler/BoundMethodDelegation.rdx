@@ -1,0 +1,48 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class BoundMethodDelegation extends ValueExpression implements IEmittable
+		{
+			public property MethodObject method;
+			public property IValueExpression object;
+
+			public function void Initialize(MethodObject m, VType bdt, IValueExpression obj)
+			{
+				method = m;
+				object = obj;
+				this._vtams = new VTAMCollection(new VTAM { vType = bdt, accessMode = AccessMode.L });
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				local BoundDelegateMarshal glue = cs.MarshalForBoundDelegate(this._vtams[0].vType as BoundDelegateTypeObject, this.method);
+
+				if(this.object != null)
+				{
+					local LocalVariable temp = ces.AddTemporary(this._vtams[0].vType);
+					CodeEmission.Emit.EmitValues(cs, ces, this.object, false);
+					ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.NewInstanceSet, int1 = temp.stackIndex, intVar = new long[1] { 0 }, res1 = glue.longName } );
+					ces.Pop(1);
+					ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.LocalRef, int1 = temp.stackIndex } );
+					ces.Push(1, temp);
+				}
+				else
+				{
+					ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.NewInstance, int1 = 0 as largeint, res1 = glue.longName } );
+					ces.Push(1);
+				}
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "bound method delegation";
+			}
+		}
+	}
+}

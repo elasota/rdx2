@@ -1,0 +1,511 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class Utility
+		{
+			public static function string EncodeRes(string resName)
+			{
+				return resName;
+			}
+
+			public static function Visibility DefaultVisibility(TokenNode vs)
+			{
+				if(vs == null)
+					return Visibility.Private;
+				switch(vs.token.tokenType)
+				{
+				case(TokenType.RW_Public):
+					{
+						return Visibility.Public;
+					}
+				case(TokenType.RW_Private):
+					{
+						return Visibility.Private;
+					}
+				case(TokenType.RW_Protected):
+					{
+						return Visibility.Protected;
+					}
+				}
+				Utility.Assert(false);
+				return Visibility.Unknown;
+			}
+
+			public static function MultipleValues FlattenMV(MultipleValues mv)
+			{
+				local bool recursive = false;
+				foreach(IValueExpression expr in mv.expressions)
+				{
+					if(expr is MultipleValues)
+						recursive = true;
+				}
+				if(!recursive)
+					return mv;
+
+				local List:<IValueExpression> newExprList = new List:<IValueExpression>();
+				foreach(IValueExpression expr in mv.expressions)
+				{
+					if(expr is MultipleValues)
+					{
+						foreach(IValueExpression subExpr in (expr as MultipleValues).expressions)
+							newExprList.Add(subExpr);
+					}
+					else
+						newExprList.Add(expr);
+				}
+
+				return new MultipleValues(newExprList.ToArray(), mv.vtams);
+			}
+
+			public static function MultipleValues SingleExpressionToList(IValueExpression expr)
+			{
+				if(expr is MultipleValues)
+					return (expr as MultipleValues);
+
+				return new MultipleValues(new IValueExpression const[1] { expr }, expr.vtams);
+			}
+
+			public static function MultipleValues EmptyExpressionList()
+			{
+				return new MultipleValues(new IValueExpression const[0], new VTAMCollection());
+			}
+
+			public static function void Assert(bool b, string str)
+			{
+				if(!b)
+					throw new AssertionFailureException();
+			}
+
+			public static function void Assert(bool b)
+			{
+				if(!b)
+					throw new AssertionFailureException();
+			}
+
+			public static function void CError(ASTNode node, ErrorCode errCode)
+			{
+				NativeServices.Error(node.codeLocation, errCode, null, null, null);
+			}
+
+			public static function void CError(ASTNode node, ErrorCode errCode, string param1)
+			{
+				NativeServices.Error(node.codeLocation, errCode, param1, null, null);
+			}
+
+			public static function void CError(ASTNode node, ErrorCode errCode, string param1, string param2)
+			{
+				NativeServices.Error(node.codeLocation, errCode, param1, param2, null);
+			}
+
+			public static function void CWarning(ASTNode node, WarningCode errCode)
+			{
+				NativeServices.Warning(node.codeLocation, errCode, null, null, null);
+			}
+
+			public static function void CWarning(ASTNode node, WarningCode errCode, string param1)
+			{
+				NativeServices.Warning(node.codeLocation, errCode, param1, null, null);
+			}
+
+			public static function void CWarning(ASTNode node, WarningCode errCode, string param1, string param2)
+			{
+				NativeServices.Warning(node.codeLocation, errCode, param1, param2, null);
+			}
+
+			public static function void CWarning(ASTNode node, WarningCode errCode, string param1, string param2, string param3)
+			{
+				NativeServices.Warning(node.codeLocation, errCode, param1, param2, param3);
+			}
+
+			public static function void AuditAccessModes(const VTAMCollection vtams)
+			{
+				foreach(VTAM vtam in vtams)
+					Assert(vtam.accessMode != AccessMode.Any && vtam.accessMode != AccessMode.AnyP);
+			}
+
+			// Polymorphic converts are possible in any of three scenarios:
+			// 1.) A direct cast is possible
+			// 2.) A direct cast of the target type to the source type is possible
+			// 3.) Both sides are interfaces
+			// 4.) One side is an interface and the other is a non-final class
+			// This checks for the latter three, so that TypeDirectlyCastable(f,t) and TypePolymorphicallyCastable(f,t) returns the desired result
+			public static function bool TypePolymorphicallyCastable(VType fromType, VType toType)
+			{
+				if(TypeDirectlyCastable(toType, fromType))
+					return true;
+
+				if(fromType is StructuredTypeObject && toType is StructuredTypeObject)
+				{
+					local StructuredTypeObject toST = toType as StructuredTypeObject;
+					local StructuredTypeObject fromST = fromType as StructuredTypeObject;
+
+					if(TypeImplementsInterface(toST, fromST))
+						return true;
+
+					if(fromST.declType == "interface")
+						return (toST.declType == "interface" || (toST.declType == "class" && !toST.isFinal));
+	
+					if(toST.declType == "interface")
+						return (fromST.declType == "class" && !toST.isFinal);
+				}
+				return false;
+			}
+
+			public static function bool TypeImplementsInterface(StructuredTypeObject fromST, StructuredTypeObject toST)
+			{
+				if(fromST.declType == "class" && toST.declType == "interface")
+				{
+					foreach(InterfaceImplementationObject i in fromST.interfaces)
+					{
+						if(i.interfaceType == toST)
+							return true;
+					}
+				}
+				return false;
+			}
+
+			public static function bool TypeDirectlyCastable(VType fromType, VType toType)
+			{
+				if(fromType == toType)
+					return true;
+
+				if(fromType is ArrayOfTypeObject && (toType.longName == "Core.Array" || toType.longName == "Core.Object"))
+					return true;
+
+				if(fromType is StaticDelegateTypeObject && (toType.longName == "Core.RDX.Method" || toType.longName == "Core.Object"))
+					return true;
+
+				if(fromType.longName == "Core.nullreference" && toType.IsObjectReference)
+					return true;
+
+				if(fromType is StructuredTypeObject && toType is StructuredTypeObject)
+				{
+					local StructuredTypeObject fromST = fromType as StructuredTypeObject;
+					local StructuredTypeObject toST = toType as StructuredTypeObject;
+	
+					// Check inheritance casts
+					if(fromST.declType == "class" && toST.declType == "class")
+					{
+						local StructuredTypeObject t = fromST;
+						while(t != null)
+						{
+							if(t == toST)
+								return true;
+							t = t.parentType;
+						}
+					}
+
+					if(fromST.declType == "interface" && toST.longName == "Core.Object")
+						return true;
+				
+					if(fromST.declType == "enum" && toST.longName == CompilerConstants.enumType())
+						return true;
+				}
+
+				// This needs to match CastMatchability
+				if(fromType is ArrayOfTypeObject && toType is ArrayOfTypeObject)
+				{
+					local ArrayOfTypeObject fromAOT = fromType as ArrayOfTypeObject;
+					local ArrayOfTypeObject toAOT = toType as ArrayOfTypeObject;
+
+					if(fromAOT.dimensions != toAOT.dimensions)
+						return false;
+
+					local MatchLevel matchability = CastMatchability(fromAOT.containedType, toAOT.containedType, false);
+
+					if(matchability == MatchLevel.Exact && (toAOT.isConst || !fromAOT.isConst))
+						return true;
+					if(matchability == MatchLevel.Direct && toAOT.isConst)
+						return true;
+				}
+
+				return false;
+			}
+
+			public static function MethodObject FindCoerce(VType fromType, VType toType, bool lossless)
+			{
+				if(fromType.GetType() != typeof(StructuredTypeObject))
+					return null;
+
+				local StructuredTypeObject fromST = fromType as StructuredTypeObject;
+
+				if(!fromST.ns.symbols.ContainsKey("#coerce"))
+					return null;
+
+				local MethodGroup mg = fromST.ns.symbols["#coerce"] as MethodGroup;
+				foreach(ICallable overload in mg.overloads)
+				{
+					local MethodObject method = overload as MethodObject;
+					if(method.isLossless == lossless && method.returnTypes.typeReferences[0].refType == toType)
+						return method;
+				}
+				return null;
+			}
+
+
+			public static function MatchLevel CastMatchability(VType fromType, VType toType, bool allowBH)
+			{
+				// Black hole
+				if(allowBH && toType.longName == "Core.nullreference")
+					return MatchLevel.Direct;
+
+				// Anything to varying
+				if(toType.longName == CompilerConstants.varyingType())
+					return MatchLevel.Varying;
+
+				if(fromType is ArrayOfTypeObject && toType is ArrayOfTypeObject)
+				{
+					local ArrayOfTypeObject fromAOT = fromType as ArrayOfTypeObject;
+					local ArrayOfTypeObject toAOT = toType as ArrayOfTypeObject;
+					if(fromAOT.dimensions != toAOT.dimensions)
+						return MatchLevel.Unmatchable;
+
+					local MatchLevel matchability = CastMatchability(fromAOT.containedType, toAOT.containedType, false);
+
+					if(matchability == MatchLevel.Exact)
+					{
+						if(fromAOT.isConst && !toAOT.isConst)
+							return MatchLevel.Polymorphic;
+						if(!fromAOT.isConst && toAOT.isConst)
+							return MatchLevel.Direct;
+						return MatchLevel.Exact;
+					}
+					else if(matchability == MatchLevel.Direct)
+					{
+						if(!toAOT.isConst)
+							return MatchLevel.Unmatchable;
+						return MatchLevel.Direct;
+					}
+					else if(matchability == MatchLevel.Polymorphic)
+						return MatchLevel.Polymorphic;
+				}
+
+				// Match by name, since some types exist multiple times with the same name (delegates...)
+				if(fromType.longName == toType.longName)
+					return MatchLevel.Exact;
+
+				if(TypeDirectlyCastable(fromType, toType))
+					return MatchLevel.Direct;
+
+				if(fromType is StructuredTypeObject && toType is StructuredTypeObject)
+				{
+					local StructuredTypeObject fromST = fromType as StructuredTypeObject;
+					local StructuredTypeObject toST = toType as StructuredTypeObject;
+					if(TypeImplementsInterface(fromST, toST))
+						return MatchLevel.Lossless;
+				}
+
+				// Find coerces
+				if(fromType is StaticDelegateTypeObject && toType is BoundDelegateTypeObject)
+				{
+					local StaticDelegateTypeObject fromSDT = fromType as StaticDelegateTypeObject;
+					local BoundDelegateTypeObject toBDT = toType as BoundDelegateTypeObject;
+
+					if(fromSDT.parameterList.longName == toBDT.parameterList.longName && fromSDT.returnTypes.longName == toBDT.returnTypes.longName)
+						return MatchLevel.Lossless;
+				}
+
+				if(FindCoerce(fromType, toType, true) != null)
+					return MatchLevel.Lossless;
+				if(FindCoerce(fromType, toType, false) != null)
+					return MatchLevel.Lossy;
+
+				if(TypeDirectlyCastable(toType, fromType))
+					return MatchLevel.Polymorphic;
+
+				return MatchLevel.Unmatchable;
+			}
+
+			public static function MatchLevel MethodMatchability(const VTAMCollection vtams, ICallable method, bool isObjectCall, uint thisIndex)
+			{
+				if(vtams.Length != method.actualParameterList.parameters.Length)
+					return MatchLevel.Unmatchable;
+
+				local MatchLevel overallMatchability = MatchLevel.Exact;
+				foreach(VTAM vtam, largeuint idx in vtams)
+				{
+					local MatchLevel matchability;
+					local MethodParameterObject param = method.actualParameterList.parameters[idx];
+
+					if(isObjectCall && idx == thisIndex - 1)
+						matchability = MatchLevel.Exact;
+					else
+						matchability = CastMatchability(vtam.vType, param.type.refType, false);
+
+					if(matchability == MatchLevel.Exact && param.type.refType.IsRefStruct)
+					{
+						// Ref types may match, but still fail on const compatibility
+						local AccessMode am = vtam.accessMode;
+						if(param.isConst)
+						{
+							// Passing mutable references to constant parameters is direct
+							if(am == AccessMode.P || am == AccessMode.L)
+								matchability = MatchLevel.Direct;
+						}
+						else
+						{
+							// Passing constant references to mutable parameters prevents match
+							if(am == AccessMode.CP || am == AccessMode.A || am == AccessMode.I || am == AccessMode.R)
+								matchability = MatchLevel.Unmatchable;
+						}
+					}
+
+					if((matchability as Enumerant.UnderlyingType) > (overallMatchability as Enumerant.UnderlyingType))
+						overallMatchability = matchability;
+				}
+
+				return overallMatchability;
+			}
+
+			public static function MultipleValues InsertThisExpression(MultipleValues parameters, uint thisIndex, IValueExpression thisExpr, ASTNode incriminate)
+			{
+				local MVTemplate mvt = new MVTemplate();
+				local bool outputtedThis = false;
+
+				foreach(IValueExpression expr in parameters.expressions)
+				{
+					if(mvt.NumVTAMs + 1 == thisIndex)
+					{
+						mvt.Append(thisExpr);
+						outputtedThis = true;
+					}
+
+					mvt.Append(expr);
+				}
+
+				if(mvt.NumVTAMs + 1 == thisIndex)
+				{
+					mvt.Append(thisExpr);
+					outputtedThis = true;
+				}
+
+				if(!outputtedThis)
+					CError(incriminate, ErrorCode.OverranThisParameter);
+
+				return FlattenMV(mvt.ToMV());
+			}
+
+			public static function MethodDelegation DelegateMethodGroup(MethodGroup mg, DelegateTypeObject dt, ASTNode incriminate)
+			{
+				// Make sure this is static
+				if(!mg.isStatic)
+					CError(incriminate, ErrorCode.DelegatedBoundMethod);
+
+				if(!dt.isCompiled)
+					throw new UnresolvedExpressionSignal();
+
+				// Find an appropriate overload
+				foreach(ICallable overload in mg.overloads)
+				{
+					local MethodObject m = overload as MethodObject;
+					if(m.parameterList.longName == dt.parameterList.longName &&
+						m.returnTypes.longName == dt.returnTypes.longName)
+						return new MethodDelegation(m, dt);
+				}
+
+				CError(incriminate, ErrorCode.CouldNotMatchDelegate);
+				return null;
+			}
+
+
+			// Enforces that "symbol" in "namespace" is accessible from "scope"
+			// If the namespace is a parent of the scope, then the symbol is always accessible
+			// Otherwise, the class owning both scopes are found and inheritance is checked
+			public static function void EnforceAccessibility(Scope scope, Namespace ns, string symbol, ASTNode incriminate)
+			{
+				local Scope scopeScan = scope;
+
+				while(scopeScan != null)
+				{
+					if(scopeScan is InstanciatedNamespace && (scopeScan as InstanciatedNamespace).ns == ns)
+					{
+						// The symbol namespace is a parent of the current namespace, so this is always accessible
+						return;
+					}
+					scopeScan = scopeScan.owner;
+				}
+
+				// If the owner namespace isn't accessible, then the symbol must be public
+				local Visibility symbolVisibility = (ns.symbols[symbol] as IVisibilityControlled).visibility;
+
+				if(symbolVisibility == Visibility.Private)
+					Utility.CError(incriminate, ErrorCode.InaccessiblePrivateMember, symbol);
+
+				if(symbolVisibility == Visibility.Protected)
+				{
+					local StructuredTypeObject scopeType = null;
+					local Scope scopeTypeScan = scope;
+
+					while(scopeTypeScan != null)
+					{
+						if(scopeTypeScan is InstanciatedNamespace)
+						{
+							local InstanciatedNamespace ii = scopeTypeScan as InstanciatedNamespace;
+							if(ii.boundType != null)
+							{
+								scopeType = ii.boundType;
+								break;
+							}
+						}
+						scopeTypeScan = scopeTypeScan.owner;
+					}
+
+					while(scopeType != null)
+					{
+						if(scopeType.ns == ns)
+						{
+							// Found a matching type in the inheritance tree
+							return;
+						}
+						scopeType = scopeType.baseClass;
+					}
+
+					Utility.CError(incriminate, ErrorCode.InaccessibleProtectedMember, symbol);
+				}
+			}
+
+			public static function MethodObject BlockMethod(Scope block)
+			{
+				while(!block.isRootLevel)
+				{
+					block = block.owner;
+					if(block == null)
+						return null;
+				}
+				return block.method;
+			}
+
+			public static function string ArrayOfTypeCode(largeuint numDimensions, bool isConst)
+			{
+				return (numDimensions as string) + "/" + (isConst as string);
+			}
+
+			public static function void UnhideLocals(MultipleValues localMV)
+			{
+				foreach(IValueExpression lv in localMV.expressions)
+					if(lv is LocalVariable)
+						(lv as LocalVariable).invisibleSymbol = false;
+			}
+
+			public static function bool TypeIsException(notnull VType vt)
+			{
+				if(!(vt is StructuredTypeObject))
+					return false;
+				local StructuredTypeObject st = vt as StructuredTypeObject;
+				while(st != null)
+				{
+					if(st.longName == "Core.Exception")
+						return true;
+					st = st.parentType;
+				}
+				return false;
+			}
+		}
+	}
+}

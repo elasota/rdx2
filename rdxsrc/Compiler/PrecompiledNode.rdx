@@ -1,0 +1,38 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class PrecompiledNode extends ExpressionNode implements IValueExpression, ICObject
+		{
+			public property ICObject containedExpression;
+
+			public function void Initialize(const CodeLocation cl, ICObject containedExpression)
+			{
+				(this as ExpressionNode).explicit:Initialize(cl);
+				this.containedExpression = containedExpression;
+			}
+
+			public intercept function VTAMCollection vtams()
+			{
+				if(containedExpression is IValueExpression)
+					return (containedExpression as IValueExpression).vtams;
+				return new VTAMCollection();
+			}
+
+			public function IValueExpression ToValues(ASTNode incriminate)
+			{
+				return containedExpression.ToValues(incriminate);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "precompiled node";
+			}
+		}
+	}
+}

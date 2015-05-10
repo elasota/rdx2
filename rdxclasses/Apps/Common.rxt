@@ -1,0 +1,151 @@
+import 'Core' 'RDX.Type'
+import 'Core' 'Object'
+import 'Core' 'RDX.MethodParameter'
+import 'Core' 'RDX.InstructionFileInfo'
+import 'Core' 'byte'
+import 'Core' 'bool'
+import 'Core' 'RDX.StructuredType'
+import 'Core' 'string'
+import 'Core' 'RDX.Method'
+import 'Core' 'RDX.ArrayOfType'
+arraydef '#' 'Core.RDX.InstructionFileInfo[C]' 'Core' 'RDX.InstructionFileInfo' const 1
+
+def 'Apps.Common' 'Serialization' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.Object[C]' 'Core' 'Object' const 1
+
+def 'Apps.Common' 'Tests' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.byte[C]' 'Core' 'byte' const 1
+
+arraydef '#' 'Core.RDX.Type[C]' 'Core' 'RDX.Type' const 1
+
+def 'Apps.Common' 'Console' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.RDX.MethodParameter[C]' 'Core' 'RDX.MethodParameter' const 1
+
+def '#' 'PL-(notnull Core.string,notnull Core.Object,Core.bool)' '#' 'Core.RDX.MethodParameter[C]' 3
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'Object',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'bool',
+	},
+}
+
+def 'Apps.Common' 'Serialization/methods/WriteObject(notnull Core.string,notnull Core.Object,Core.bool)/bytecode' '#' 'Core.byte[C]' 3
+{
+  0,  35,   0, 
+}
+
+def 'Apps.Common' 'Serialization/methods/WriteObject(notnull Core.string,notnull Core.Object,Core.bool)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Apps/common.rdx',
+		line : 23,
+		firstInstruction : 0,
+	},
+}
+
+def 'Apps.Common' 'Serialization/methods/WriteObject(notnull Core.string,notnull Core.Object,Core.bool)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,notnull Core.Object,Core.bool)',
+	returnTypes : res '#' 'TT-()',
+	bytecode : res 'Apps.Common' 'Serialization/methods/WriteObject(notnull Core.string,notnull Core.Object,Core.bool)/bytecode',
+	numInstructions : 1,
+	instructionFileInfos : res 'Apps.Common' 'Serialization/methods/WriteObject(notnull Core.string,notnull Core.Object,Core.bool)/debugInfo',
+}
+
+def '#' 'TT-(Core.Object)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'Object',
+}
+
+def '#' 'PL-(notnull Core.string,Core.bool)' '#' 'Core.RDX.MethodParameter[C]' 2
+{
+	{
+		type : res 'Core' 'string',
+		isNotNull : true,
+		isConstant : true,
+	},
+	{
+		type : res 'Core' 'bool',
+	},
+}
+
+def '#' 'PL-(Core.string)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Core' 'string',
+	},
+}
+
+def '#' 'TT-()' '#' 'Core.RDX.Type[C]' 0
+{
+}
+
+def 'Apps.Common' 'Serialization/methods/ReadObject(notnull Core.string,Core.bool)/bytecode' '#' 'Core.byte[C]' 4
+{
+  0,  24,  35,   1, 
+}
+
+def 'Apps.Common' 'Serialization/methods/ReadObject(notnull Core.string,Core.bool)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 1
+{
+	{
+		filename : 'rdxsrc/Apps/common.rdx',
+		line : 28,
+		firstInstruction : 0,
+	},
+}
+
+def 'Apps.Common' 'Serialization/methods/ReadObject(notnull Core.string,Core.bool)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Core.string,Core.bool)',
+	returnTypes : res '#' 'TT-(Core.Object)',
+	bytecode : res 'Apps.Common' 'Serialization/methods/ReadObject(notnull Core.string,Core.bool)/bytecode',
+	numInstructions : 2,
+	instructionFileInfos : res 'Apps.Common' 'Serialization/methods/ReadObject(notnull Core.string,Core.bool)/debugInfo',
+}
+
+def 'Apps.Common' 'Console/methods/WriteLine(Core.string)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Core.string)',
+	returnTypes : res '#' 'TT-()',
+	bytecode : null,
+}
+

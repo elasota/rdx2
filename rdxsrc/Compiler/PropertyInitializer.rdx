@@ -1,0 +1,24 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class PropertyInitializer
+		{
+			public property ObjectProperty dest;
+			public property IValueExpression src;
+			public property ASTNode incriminateNode;
+
+			public function void Initialize(ObjectProperty dest, IValueExpression src, ASTNode incriminateNode)
+			{
+				this.dest = dest;
+				this.src = src;
+				this.incriminateNode = incriminateNode;
+			}
+		}
+	}
+}

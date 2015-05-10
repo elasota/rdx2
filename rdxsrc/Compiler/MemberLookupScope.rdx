@@ -1,0 +1,44 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class MemberLookupScope extends Scope
+		{
+			private property StructuredTypeObject _st;
+			private property CompilerState _cs;
+
+			public property LocalVariable thisLocal;
+
+			public function void Initialize(CompilerState cs, Scope owner, StructuredTypeObject st)
+			{
+				(this as Scope).Initialize(owner);
+				_st = st;
+				_cs = cs;
+			}
+
+			public virtual function ICObject Lookup(string symbol, ASTNode incriminate)
+			{
+				Utility.Assert(incriminate != null);
+
+				local ICObject v;
+				if(_st.ns.symbols.ContainsKey(symbol))
+				{
+					v = _st.ns.symbols[symbol];
+					if(v is PropertyObject)
+						return new ObjectProperty(_cs, thisLocal, v as PropertyObject, incriminate);
+					if(v is MethodGroup && !((v as MethodGroup).isStatic))
+						return new ObjectMethod(thisLocal, (v as MethodGroup));
+
+				}
+				if(owner != null)
+					return owner.Lookup(symbol, incriminate);
+				return null;
+			}
+		}
+	}
+}

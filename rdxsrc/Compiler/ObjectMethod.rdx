@@ -1,0 +1,28 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class ObjectMethod extends SimpleCObject
+		{
+			public property IValueExpression object;
+			public property MethodGroup methodGroup;
+			public property bool isExplicit;
+
+			public function void Initialize(IValueExpression obj, MethodGroup mg)
+			{
+				this.object = obj;
+				this.methodGroup = mg;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "object method";
+			}
+		}
+	}
+}

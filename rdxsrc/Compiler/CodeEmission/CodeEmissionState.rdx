@@ -1,0 +1,266 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		namespace CodeEmission
+		{
+			public class CodeEmissionState
+			{
+				private class CodeLocationStack
+				{
+					public property CodeLocationStack previous;
+					public property CodeLocation codeLocation;
+				}
+
+				private property CodeLocationStack _codeLocationStack;
+				private property List:<LocalVariable> _temporaries;
+				private property List:<PInstr> _pendingInstructions;
+				private property largeuint _opstackIndex;
+				private property largeuint _localCount;
+				private property largeuint _labelCount;
+				private property Dictionary:<largeuint, LocalVariable> _opstackTempRefs;
+				private property List:<PInstr> _instructions;
+
+				public function void Initialize()
+				{
+					_pendingInstructions = new List:<PInstr>();
+					_temporaries = new List:<LocalVariable>();
+					_opstackIndex = 0;
+					_opstackTempRefs = new Dictionary:<largeuint, LocalVariable>();
+					_localCount = 0;
+					_labelCount = 0;
+					_instructions = new List:<PInstr>();
+				}
+
+				public intercept function largeuint OpstackIndex()
+				{
+					return _opstackIndex;
+				}
+
+				public function void AddInstruction(const PInstr instr)
+				{
+					local PInstr taggedInstr = instr;
+					taggedInstr.opstackIndex = _opstackIndex;
+					taggedInstr.filename = _codeLocationStack.codeLocation.filename;
+					taggedInstr.line = _codeLocationStack.codeLocation.line;
+					_pendingInstructions.Add(taggedInstr);
+				}
+
+				public function LocalVariable AddTemporary(VType st)
+				{
+					// See if an existing temporary can be recycled
+					foreach(LocalVariable temp in _temporaries)
+					{
+						if(temp.vtams[0].vType == st && temp.tempActive == false)
+						{
+							temp.tempActive = true;
+							return temp;
+						}
+					}
+
+					Utility.Assert(st.longName != "Core.nullreference");
+
+					local LocalVariable lv = new LocalVariable(null, st, false, false);
+					lv.stackIndex = _localCount;
+					_localCount++;
+					_temporaries.Add(lv);
+
+					lv.isTemporary = true;
+					lv.numTempReferences = 0;
+					lv.tempActive = true;
+
+					return lv;
+				}
+
+				public function largeuint Push(largeuint count)
+				{
+					return Push(count, null);
+				}
+
+				public function largeuint Push()
+				{
+					return Push(1, null);
+				}
+
+				public function largeuint Push(largeuint count, LocalVariable tempRef)
+				{
+					if(tempRef != null && tempRef.isTemporary)
+					{
+						_opstackTempRefs[_opstackIndex] = tempRef;
+						tempRef.numTempReferences++;
+					}
+
+					_opstackIndex += count;
+					return _opstackIndex;
+				}
+
+				public function largeuint Pop()
+				{
+					return Pop(1);
+				}
+
+				public function largeuint Pop(largeuint count)
+				{
+					if(count == 0)
+						return _opstackIndex;
+
+					while(count > 1)
+					{
+						Pop(1);
+						count--;
+					}
+
+					_opstackIndex--;
+					if(_opstackTempRefs.ContainsKey(_opstackIndex))
+					{
+						local LocalVariable tempRef = _opstackTempRefs[_opstackIndex];
+
+						_opstackTempRefs.Remove(_opstackIndex);
+						local largeuint numTempReferences = tempRef.numTempReferences - 1;
+						tempRef.numTempReferences = numTempReferences;
+						if(numTempReferences == 0 && !tempRef.holdOpenTemp)
+							tempRef.tempActive = false;
+					}
+
+					return _opstackIndex;
+				}
+
+				public function string CreateLabel()
+				{
+					_labelCount++;
+					return "label" + _labelCount;
+				}
+
+				public function void AddConstantInstruction(notnull string typeName, notnull string constantValue, Constant.Signal signal)
+				{
+					local POp opcode;
+					local long int1, int2;
+					local string res1, str1;
+
+					opcode, int1, int2, res1, str1 = NativeServices.EncodeConstant(typeName, constantValue, signal);
+
+					AddInstruction( new PInstr { op = opcode, res1 = res1, int1 = int1, int2 = int2, str1 = str1 } );
+				}
+
+				public function largeuint CreateLocal()
+				{
+					Utility.Assert(_opstackIndex == 0);	// Can't create locals in the middle of an operation except as temporaries
+
+					local largeuint oldLC = _localCount;
+					_localCount++;
+					return _localCount;
+				}
+
+				public function largeuint Clone(largeuint start, largeuint count)
+				{
+					if(count == 0)
+						return _opstackIndex;
+					while(count > 1)
+					{
+						Clone(start, 1);
+						count--;
+					}
+
+					local largeuint tidx = _opstackIndex - start - 1;
+					if(_opstackTempRefs.ContainsKey(tidx))
+					{
+						local LocalVariable migratedTemp = _opstackTempRefs[tidx];
+						if(migratedTemp.numTempReferences != 0)
+						{
+							_opstackTempRefs[_opstackIndex] = migratedTemp;
+							migratedTemp.numTempReferences++;
+						}
+					}
+					_opstackIndex++;
+					return _opstackIndex;
+				}
+
+				// Flushes all pending temporary allocations and instructions
+				public function void Discharge()
+				{
+					foreach(LocalVariable temp in _temporaries)
+					{
+						_instructions.Add(new PInstr
+							{
+								op = POp.AllocLocal,
+								res1 = temp.vtams[0].vType.longName,
+								str1 = "compiler temp",
+								filename = _codeLocationStack.codeLocation.filename,
+								line = _codeLocationStack.codeLocation.line
+							});
+					}
+
+					foreach(PInstr instr in _pendingInstructions)
+						_instructions.Add(instr);
+					_pendingInstructions.Clear();
+
+					foreach(LocalVariable temp in _temporaries)
+					{
+						Utility.Assert(temp.tempActive == false, "Internal error: Temporary was not properly disposed of");
+						local CodeLocation codeLocation = _codeLocationStack.codeLocation;
+						_instructions.Add(new PInstr { op = POp.RemoveLocal, filename = codeLocation.filename, line = codeLocation.line });
+						_localCount--;
+					}
+					_temporaries.Clear();
+				}
+
+				public function void EmitAliasableJump(CodeBlock baseBlock, string label)
+				{
+					if(!baseBlock.isRootLevel)
+					{
+						this.AddInstruction(new PInstr { op = POp.Jump, str1 = label } );
+						return;
+					}
+
+					local CodeBlock gBlock = baseBlock.owner as CodeBlock;
+
+					while(gBlock != null && !(gBlock is GuaranteeInnerBlock) && !(gBlock.isRootLevel))
+						gBlock = gBlock.owner as CodeBlock;
+
+					if(gBlock == null || !(gBlock is GuaranteeInnerBlock))
+						this.AddInstruction(new PInstr { op = POp.Jump, str1 = label } );
+					else
+					{
+						// Has a guarantee
+						local GuaranteeOuterBlock gouter = gBlock.owner as GuaranteeOuterBlock;
+						local string newLabel = gouter.AddLabelToGuarantee(label);
+						this.AddInstruction(new PInstr { op = POp.Jump, str1 = newLabel } );
+					}
+				}
+				
+				public function void CloseCodeBlock(CodeBlock block)
+				{
+					Utility.Assert(block.isClosed == false, "Block was already closed");
+					local largeuint numLocals = block.NumLocals;
+					for(local largeuint i=0;i<numLocals;i++)
+					{
+						this.AddInstruction(new PInstr { op = POp.RemoveLocal } );
+						this._localCount--;
+					}
+					block.isClosed = true;
+					this.Discharge();
+					this.PopCodeLocation();
+				}
+
+				public function void PopCodeLocation()
+				{
+					_codeLocationStack = _codeLocationStack.previous;
+				}
+
+				public function void PushCodeLocation(const CodeLocation cl)
+				{
+					_codeLocationStack = new CodeLocationStack { previous = _codeLocationStack, codeLocation = cl };
+				}
+
+				public function PInstr[] ExportInstructions()
+				{
+					return _instructions.ToArray();
+				}
+			}
+		}
+	}
+}

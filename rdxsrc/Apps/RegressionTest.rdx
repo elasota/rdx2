@@ -1,0 +1,412 @@
+using Core;
+using Core.Collections;
+using Core.RDX;
+using Apps.Common;
+
+namespace Apps
+{
+
+	namespace RegressionTest
+	{
+		public class RegressionTest
+		{
+			public delegate void StructPrintContentsDelegate(string testV);
+			public static delegate void PrintContentsDelegateStatic(string testV);
+			public static delegate string UnboundDelegate(string str);
+			public static delegate void DelegateParameterTestDelegate();
+
+			public struct DelegateTestStruct
+			{
+				public property string str;
+
+				public function void PrintContents(string testV)
+				{
+					Console.WriteLine(str);
+				}
+			}
+
+			public struct UnrelatedStruct
+			{
+				public function void Test()
+				{
+					Console.WriteLine("Printing from unrelated");
+				}
+			}
+
+			public class DelegateTestClass implements DelegateTestInterface
+			{
+				public delegate void PrintContentsDelegate();
+				public property string str;
+
+				public function void PrintContents()
+				{
+					Console.WriteLine("Printing from delegatetestclass");
+					Console.WriteLine(str);
+				}
+			}
+		
+			public interface DelegateTestInterface
+			{
+				public delegate void PrintContentsDelegate();
+				public function void PrintContents();
+			}
+
+			public native static function void TestDirectInvokeGC(string str);
+
+			public byval struct FatStruct
+			{
+				public property int i1, i2, i3, i4;
+			}
+			
+			public interface Interface1
+			{
+				public function void Func1();
+				public function void Func2();
+			}
+			public interface Interface2
+			{
+				public function void Func3();
+				public function void Func4();
+			}
+
+			public class InterfaceImplementingClass implements Interface1, Interface2
+			{
+				public function void Func1() { }
+				public function void Func2() { }
+				public function void Func3() { }
+				public function void Func4() { Console.WriteLine("Func 4 called"); }
+			}
+
+			public class TestException extends Exception
+			{
+			}
+
+			public static function void TestArrayIterator()
+			{
+				local string[] myArray = new string[] { "Str0", "Str1", "Str2" };
+				Console.WriteLine("Array iterator:");
+				foreach(string str in myArray)
+					Console.WriteLine(str);
+				foreach(string str, int idx in myArray)
+				{
+					Console.WriteLine(idx);
+					Console.WriteLine(str);
+				}
+			}
+
+			public static function void TestHashTable()
+			{
+				local Dictionary:<int, string> myDict = new Dictionary:<int, string>();
+
+				Console.WriteLine("Dictionary:");
+				for(local int i=0;i<20;i++)
+					myDict[i] = "Str" + i;
+
+				foreach(int k, string v in myDict)
+				{
+					Console.WriteLine(k);
+					Console.WriteLine(v);
+				}
+			}
+
+			public static function void TestSwitch(int v)
+			{
+				switch(v)
+				{
+				case(0,1):
+					{
+						Console.WriteLine("0 or 1");
+					}
+				case(3):
+					{
+						Console.WriteLine("2");
+					}
+				case(default):
+					{
+						Console.WriteLine("default");
+					}
+				}
+			}
+
+			public static function void TestExceptionInstrOffsetter()
+			{
+			}
+
+			public static function void TestExceptionThrow()
+			{
+				throw new TestException();
+			}
+
+			public static function int TestExceptions()
+			{
+				// These should insert ILOP_ticks, to test that the instruction offset works right
+				TestExceptionInstrOffsetter();
+				TestExceptionInstrOffsetter();
+
+				try
+				{
+					TestExceptionThrow();
+				}
+				catch(TestException ex)
+				{
+					Console.WriteLine("Caught TestException");
+				}
+				catch(Exception ex)
+				{
+					Console.WriteLine("Caught something else");
+				}
+				return 0;
+			}
+
+			public static function void TestInterfaces()
+			{
+				local Interface2 if2 = new InterfaceImplementingClass();
+				if2.Func4();
+			}
+
+			public static function int TestReentryFunc(string str1, string str2)
+			{
+				Console.WriteLine(str1);
+				Console.WriteLine(str2);
+				TestDirectInvokeGC(str2);
+				Tests.StackTrace();
+				throw new TestException();
+				return 4;
+			}
+			
+			public static function string TestUnboundDelegateFunc(string str)
+			{
+				Console.WriteLine(str);
+				return "Delegate returned string";
+			}
+			
+			public static function void TestUnboundDelegates()
+			{
+				local UnboundDelegate ud = TestUnboundDelegateFunc as UnboundDelegate;
+				local string returnedStr;
+				returnedStr = ud("Testing unbound delegates");
+				Console.WriteLine(returnedStr);
+			}
+
+			public static function void TestReentry()
+			{
+				try
+				{
+					Tests.TestReentry("12345678", TestReentryFunc as Tests.TestReentryDelegate);
+				}
+				catch(TestException tex)
+				{
+					Console.WriteLine("Caught reentry-propagated exception");
+				}
+				Console.WriteLine("Post-reentry");
+			}
+
+			public static function DelegateTestInterface.PrintContentsDelegate TestRValueDelegate(DelegateTestInterface dti)
+			{
+				return dti.PrintContents as DelegateTestInterface.PrintContentsDelegate;
+			}
+
+			public static function void TestBD_Static(string str)
+			{
+				Console.WriteLine("Printed static");
+			}
+
+			public static function void TestBoundDelegates()
+			{
+				Console.WriteLine("Testing bound delegates");
+
+				local DelegateTestStruct dts;
+				dts.str = "DelegateTestStruct print-out";
+				local StructPrintContentsDelegate sptcdX = dts.PrintContents as StructPrintContentsDelegate;
+				dts.str = "DelegateTestStruct print-out modified";
+				sptcdX("1");
+				sptcdX = TestBD_Static as StructPrintContentsDelegate;
+				sptcdX("2");
+				sptcdX = TestBD_Static as PrintContentsDelegateStatic as StructPrintContentsDelegate;
+				sptcdX("3");
+
+				local DelegateTestClass dtc = new DelegateTestClass();
+				dtc.str = "DelegateTestClass print-out";
+				local DelegateTestClass.PrintContentsDelegate pcd = dtc.PrintContents as DelegateTestClass.PrintContentsDelegate;
+				dtc.str = "DelegateTestClass print-out modified";
+				pcd();
+				
+				local DelegateTestInterface dti = dtc;
+				local DelegateTestInterface.PrintContentsDelegate pcd2 = TestRValueDelegate(dti);
+				pcd2();
+				pcd2 = dtc.PrintContents as DelegateTestInterface.PrintContentsDelegate;
+				pcd2();
+			}
+			
+			public static function void TestLargeParametersCall(int a, FatStruct b, int c)
+			{
+				Console.WriteLine("Large parameters:");
+				Console.WriteLine(a);
+				Console.WriteLine(b.i1);
+				Console.WriteLine(b.i2);
+				Console.WriteLine(b.i3);
+				Console.WriteLine(b.i4);
+				Console.WriteLine(c);
+			}
+			
+			public static function void TestLargeParameters()
+			{
+				local FatStruct fat;
+				fat.i1 = 2;
+				fat.i2 = 3;
+				fat.i3 = 4;
+				fat.i4 = 5;
+				TestLargeParametersCall(1, fat, 6);
+			}
+
+			public class DemotionTest
+			{
+			}
+
+			public class PromotionTest1 extends DemotionTest
+			{
+			}
+
+			public class PromotionTest2 extends DemotionTest
+			{
+			}
+
+			public static function void TestThreadDeserializationDemote(DemotionTest dt)
+			{
+				dt = new PromotionTest2();
+				local Thread thisThread = Thread.GetCurrent();
+
+				Serialization.WriteObject("test.rdxobj", thisThread, false);
+				thisThread = Serialization.ReadObject("test.rdxobj") as Thread;
+			}
+
+			public static function void TestThreadDeserializationPD2()
+			{
+				local PromotionTest1 pt1 = new PromotionTest1();
+				TestThreadDeserializationDemote(pt1);
+			}
+
+			public static function void TestThreadDeserializationPD1(DelegateParameterTestDelegate d)
+			{
+				d();
+			}
+
+			public static function void TestThreadDeserialization()
+			{
+				local DelegateParameterTestDelegate d = TestThreadDeserializationPD2 as DelegateParameterTestDelegate;
+				TestThreadDeserializationPD1(d);
+			}
+
+			public struct TestUsing_Struct
+			{
+				public property string str;
+
+				public function void Initialize(string s)
+				{
+					str = s;
+				}
+
+				public function void Dispose()
+				{
+					Console.WriteLine("Disposed of " + str);
+				}
+			}
+			
+			public static function int TestFinally()
+			{
+				for(local int i=0;i<10;i++)
+				{
+					try
+					{
+						Console.WriteLine("Array iteration");
+						if(i == 4)
+							break;
+					}
+					finally
+					{
+						Console.WriteLine("Finally");
+					}
+					Console.WriteLine("Fell through try/finally");
+				}
+
+				return 10;
+			}
+
+			public static function int TestUsing()
+			{
+				for(local int i=0;i<10;i++)
+				{
+					using(TestUsing_Struct tus1, tus2 = new TestUsing_Struct("Testing struct 1"), new TestUsing_Struct("Testing struct 2"))
+					{
+						if(i == 4)
+							break;
+					}
+					Console.WriteLine("Fell through using");
+				}
+
+				return 10;
+			}
+			
+			public static function void TestDeadCodeElimination()
+			{
+				if(false)
+				{
+					local int a, b, c;
+					Console.WriteLine("Dead code");
+				}
+			}
+
+			public static function void TestMaskWarning(int a)
+			{
+				local int a;
+			}
+			
+			public static function void TestOrderOfOperations()
+			{
+				Console.WriteLine("OOA test, should print 11:");
+				Console.WriteLine( 1 + 2 * 3 + 4 as string );
+			}
+
+			public static function void ReturnNothing()
+			{
+			}
+
+			public class PropertyTypeInitTest
+			{
+				public property int a;
+			}
+			
+			public static function int, int ReturnTwoInts()
+			{
+				return 1, 2;
+			}
+
+			public static function void CheckReturnInts()
+			{
+				local int a;
+				null, a = ReturnTwoInts();
+			}
+
+			public static function int main(string const[] args)
+			{
+				TestUsing();
+				TestBoundDelegates();
+				TestArrayIterator();
+				TestHashTable();
+				for(local int i=0;i<5;i++)
+					TestSwitch(i);
+				TestInterfaces();
+				TestExceptions();
+				TestLargeParameters();
+				TestReentry();
+				TestUnboundDelegates();
+				TestThreadDeserialization();
+				TestFinally();
+				TestOrderOfOperations();
+
+				
+				return 0;
+			}
+		}
+	}
+}

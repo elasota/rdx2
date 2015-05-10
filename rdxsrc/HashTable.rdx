@@ -1,0 +1,494 @@
+/*
+ * Copyright (C) 2011-2013 Eric Lasota
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+namespace Core
+{
+	namespace Collections
+	{
+		public class KeyNotFoundException extends Exception
+		{
+		}
+
+		[cpp
+			rdxheaders("rdx_threading.hpp")
+			nativeproperties(
+				//"RDX::Threading::LightMutex _deserializeRehashMutex"
+			)
+		]
+		public class HashSetBase
+		{
+			public enum ElementType
+			{
+				Unallocated,
+				Deleted,
+				Used,
+			}
+
+			public struct HashElementInfo
+			{
+				public property hashcode hashCode;
+				public property largeuint next;
+				public property bool isInUse;
+			}
+
+			protected property largeuint _freeScanPos;
+			protected property HashElementInfo[] _hashElements;
+			protected property serializationdetector _serializationDetector;
+
+			public abstract virtual function void MoveElement(largeuint src, largeuint dest);
+			public abstract virtual function void ClearElement(largeuint index);
+			public abstract virtual function Array CreateNewContents(largeuint newSize);
+			public abstract virtual function void InsertOldContents(notnull Array oldContents, largeuint oldPos, largeuint newPos);
+
+			public function void RemoveKey(largeuint index)
+			{
+				local HashElementInfo[] hei = _hashElements;
+				local HashElementInfo targetHEI = hei[index];
+				local largeuint targetNext = targetHEI.next;
+				if(targetNext == index)
+				{
+					// Target is in main position and is alone
+					ClearElement(index);
+					hei[index].isInUse = false;
+					return;
+				}
+
+				// Find the previous one in the chain
+				local largeuint targetPrev = targetNext;
+				{
+					local largeuint next;
+					do
+					{
+						next = hei[targetPrev].next;
+					} while(next != index);
+				}
+
+				local largeuint targetMainPos = targetHEI.hashCode.ToLargeUInt() % hei.Length;
+				if(targetMainPos == index)
+				{
+					// Target is in main position, move the next in
+					MoveElement(targetNext, index);
+					hei[index] = hei[targetNext];
+					hei[targetNext].isInUse = false;
+					if(targetPrev == targetNext)
+					{
+						// Only one link
+						hei[index].next = index;
+					}
+					else
+					{
+						// Multiple links
+						hei[targetPrev].next = index;
+					}
+				}
+				else
+				{
+					// Target is not in main position, relink
+					ClearElement(index);
+					hei[targetPrev].next = targetNext;
+					hei[index].isInUse = false;
+				}
+			}
+
+			public function largeuint NewKey(hashcode hashCode)
+			{
+				local HashElementInfo[] hei = _hashElements;
+				local largeuint capacity = hei.Length;
+				local largeuint insertMainPos = hashCode.ToLargeUInt() % capacity;
+
+				local HashElementInfo targetHEI = hei[insertMainPos];
+
+				// If this element isn't used, then create a new ring starting at its own position
+				if(!targetHEI.isInUse)
+				{
+					targetHEI.isInUse = true;
+					targetHEI.hashCode = hashCode;
+					targetHEI.next = insertMainPos;
+					hei[insertMainPos] = targetHEI;
+					return insertMainPos;
+				}
+
+				local largeuint freePos = FindFree();
+				if(freePos == hei.Length)
+				{
+					Rehash();
+					return NewKey(hashCode);
+				}
+
+				local largeuint targetMainPos = targetHEI.hashCode.ToLargeUInt() % capacity;
+				if(targetMainPos != insertMainPos)
+				{
+					// Target is not in main position.  Move it somewhere else and move this in.
+					// Find the element in this ring linking to it.
+					local largeuint prev = targetHEI.next;
+					{
+						local largeuint prevNext = hei[prev].next;
+						while(prevNext != insertMainPos)
+						{
+							prev = prevNext;
+							prevNext = hei[prev].next;
+						}
+					}
+
+					// Relink
+					hei[prev].next = freePos;
+
+					// Move the entire element into the free pos
+					MoveElement(targetMainPos, freePos);
+					hei[freePos] = targetHEI;
+
+					// Relink the main pos to point to itself
+					hei[insertMainPos].next = targetMainPos;
+					return insertMainPos;
+				}
+				else
+				{
+					// Target is in its main position, add the free pos to the ring instead
+					local largeuint oldNext = targetHEI.next;
+					hei[insertMainPos].next = freePos;
+					hei[freePos] = new HashElementInfo { hashCode = hashCode, next = oldNext, isInUse = true };
+					return freePos;
+				}
+			}
+
+			// Rehashes, returns new values array if applicable
+			private function void Rehash()
+			{
+				local HashElementInfo[] hei = _hashElements;
+				local largeuint numUsedKeys;
+				local largeuint oldLength = hei.Length;
+				for(local largeuint i=0;i<oldLength;i++)
+				{
+					if(hei[i].isInUse)
+						numUsedKeys++;
+				}
+				// Ensure that the new array is large enough for at least one new key
+				local largeuint newArraySize = 8;
+				while(newArraySize <= numUsedKeys)
+					newArraySize *= 2;
+
+				_freeScanPos = 0;
+
+				if(newArraySize == hei.Length)
+					return;		// Nothing to do, except reset the free scan pos
+
+				local HashElementInfo[] oldHEI = hei;
+				hei = new HashElementInfo[newArraySize];
+				_hashElements = hei;
+
+				local Array oldContents = CreateNewContents(newArraySize);
+				for(local largeuint i=0;i<oldLength;i++)
+				{
+					if(oldHEI[i].isInUse)
+					{
+						local largeuint pos = NewKey(oldHEI[i].hashCode);
+						InsertOldContents(oldContents, i, pos);
+					}
+				}
+
+			}
+			
+			private function largeuint FindFree()
+			{
+				local HashElementInfo[] hei = _hashElements;
+				local largeuint endPos = hei.Length;
+				local largeuint freeScanPos = _freeScanPos;
+				while(freeScanPos != endPos)
+				{
+					if(!hei[freeScanPos].isInUse)
+					{
+						// Set the next scan pos to the next element, return the one we found
+						_freeScanPos = freeScanPos + 1;
+						return freeScanPos;
+					}
+					freeScanPos++;
+				}
+				return endPos;
+			}
+
+			// Returns hasnext, nextindex
+			protected /*native*/ function bool, largeuint NextFrom(largeuint k)
+			{
+				local HashElementInfo[] elementInfo = _hashElements;
+				local largeuint numElements = elementInfo.Length;
+				do
+				{
+					if(elementInfo[k].isInUse)
+						return true, k;
+					k++;
+				} while(k < numElements);
+				return false, 0;
+			}
+
+			public function void Initialize()
+			{
+				local largeuint initialSize = 8;
+				_freeScanPos = 0;
+				_hashElements = new HashElementInfo[initialSize];
+				CreateNewContents(initialSize);
+			}
+		}
+		
+		public struct KeyValuePair:<Tkey,Tvalue>
+		{
+			public property Tkey key;
+			public property Tvalue value;
+		}
+
+		public class HashSet:<Tkey> extends HashSetBase
+		{
+			public struct Enumerator
+			{
+				private property largeuint _nextIndex;
+				private property bool _hasNext;
+				private property HashSet:<Tkey> _hashSet;
+				
+				public function void Initialize(HashSet:<Tkey> hashSet)
+				{
+					_hashSet = hashSet;
+					_hasNext, _nextIndex = hashSet.NextFrom(0);
+				}
+				
+				public function bool HasNext()
+				{
+					return _hasNext;
+				}
+				
+				public function Tkey GetNext()
+				{
+					local largeuint index = _nextIndex;
+					_hasNext, _nextIndex = _hashSet.NextFrom(_nextIndex + 1);
+					return _hashSet.GetIndex(_nextIndex);
+				}
+			}
+
+			// Returns found, index
+			public function bool, largeuint FindExisting(Tkey key)
+			{
+				local hashcode keyHash = key.GetHashCode();
+				local Tkey[] keys = _keys;
+				local HashElementInfo[] elementInfo = _hashElements;
+
+				local largeuint scanPos = keyHash.ToLargeUInt() % keys.Length;
+
+				if(!elementInfo[scanPos].isInUse)
+					return false, 0;
+
+				local largeuint initialPos = scanPos;
+				while(true)
+				{
+					// TODO: Language support for exact compare
+					if(keys[scanPos] == key)
+						return true, scanPos;
+					scanPos = elementInfo[scanPos].next;
+					if(scanPos == initialPos)
+						return false, 0;
+				}
+			}
+
+			public function bool __index(Tkey key)
+			{
+				return FindExisting(key);
+			}
+
+			public function void Add(Tkey key)
+			{
+				if(!FindExisting(key))
+				{
+					local largeuint pos = NewKey(key.GetHashCode());
+					_keys[pos] = key;
+				}
+			}
+
+			public function void Remove(Tkey key)
+			{
+				local bool exists, largeuint idx = FindExisting(key);
+				if(exists)
+					RemoveKey(idx);
+			}
+
+			public function bool ContainsKey(Tkey key)
+			{
+				return FindExisting(key);
+			}
+
+			public function Tkey GetIndex(largeuint idx)
+			{
+				return _keys[idx];
+			}
+
+			public function Enumerator GetEnumerator()
+			{
+				return new Enumerator(this);
+			}
+
+			public virtual function void MoveElement(largeuint src, largeuint dest)
+			{
+				local Tkey defaultKey;
+				local Tkey[] keys = _keys;
+				keys[dest] = keys[src];
+				keys[src] = defaultKey;
+			}
+
+			public virtual function void ClearElement(largeuint index)
+			{
+				local Tkey defaultKey;
+				_keys[index] = defaultKey;
+			}
+			
+			public virtual function Array CreateNewContents(largeuint newSize)
+			{
+				local Tkey[] oldContents = _keys;
+				_keys = new Tkey[newSize];
+				return oldContents;
+			}
+
+			public virtual function void InsertOldContents(notnull Array oldContents, largeuint oldPos, largeuint newPos)
+			{
+				_keys[newPos] = (oldContents as Tkey[])[oldPos];
+			}
+
+			private property Tkey[] _keys;
+		}
+
+		public class Dictionary:<Tkey,Tvalue> extends HashSetBase
+		{
+			public typedef TKeyValuePair = KeyValuePair:<Tkey,Tvalue>;
+			private property TKeyValuePair[] _keyValues;
+
+			public struct Enumerator
+			{
+				private property largeuint _nextIndex;
+				private property bool _hasNext;
+				private property Dictionary:<Tkey,Tvalue> _dict;
+				
+				public function void Initialize(Dictionary:<Tkey,Tvalue> dict)
+				{
+					_dict = dict;
+					_hasNext, _nextIndex = dict.NextFrom(0);
+				}
+				
+				public function bool HasNext()
+				{
+					return _hasNext;
+				}
+				
+				public function Tkey, Tvalue GetNext()
+				{
+					local largeuint index = _nextIndex;
+					_hasNext, _nextIndex = _dict.NextFrom(_nextIndex + 1);
+					return _dict.GetIndex(_nextIndex);
+				}
+			}
+
+			public function Tvalue __index(Tkey key)
+			{
+				local bool found, largeuint idx = FindExisting(key);
+
+				if(!found)
+					throw new KeyNotFoundException();
+				return _keyValues[idx].value;
+			}
+
+			public function void __setindex(Tvalue value, Tkey key)
+			{
+				local bool found, largeuint idx = FindExisting(key);
+				if(!found)
+				{
+					idx = NewKey(key.GetHashCode());
+					_keyValues[idx].key = key;
+				}
+				_keyValues[idx].value = value;
+			}
+
+			public function void Remove(Tkey key)
+			{
+				local bool found, largeuint idx = FindExisting(key);
+				if(found)
+					RemoveKey(idx);
+			}
+
+			public function Tkey, Tvalue GetIndex(largeuint idx)
+			{
+				return _keyValues[idx].key, _keyValues[idx].value;
+			}
+
+			public function bool ContainsKey(Tkey key)
+			{
+				return FindExisting(key);
+			}
+
+			// Returns found, index
+			public function bool, largeuint FindExisting(Tkey key)
+			{
+				local hashcode keyHash = key.GetHashCode();
+				local TKeyValuePair[] kvps = _keyValues;
+				local HashElementInfo[] elementInfo = _hashElements;
+
+				local largeuint scanPos = keyHash.ToLargeUInt() % kvps.Length;
+
+				if(!elementInfo[scanPos].isInUse)
+					return false, 0;
+
+				local largeuint initialPos = scanPos;
+				while(true)
+				{
+					// TODO: Language support for exact compare
+					if(kvps[scanPos].key == key)
+						return true, scanPos;
+					scanPos = elementInfo[scanPos].next;
+					if(scanPos == initialPos)
+						return false, 0;
+				}
+			}
+
+			
+			public virtual function void MoveElement(largeuint src, largeuint dest)
+			{
+				local TKeyValuePair[] kvps = _keyValues;
+				_keyValues[dest] = _keyValues[src];
+				_keyValues[src] = new TKeyValuePair();
+			}
+
+			public virtual function void ClearElement(largeuint index)
+			{
+				_keyValues[index] = new TKeyValuePair();
+			}
+			
+			public virtual function Array CreateNewContents(largeuint newSize)
+			{
+				local TKeyValuePair[] oldContents = _keyValues;
+				_keyValues = new TKeyValuePair[newSize];
+				return oldContents;
+			}
+
+			public virtual function void InsertOldContents(notnull Array oldContents, largeuint oldPos, largeuint newPos)
+			{
+				_keyValues[newPos] = (oldContents as TKeyValuePair[])[oldPos];
+			}
+
+			public function Enumerator GetEnumerator()
+			{
+				return new Enumerator(this);
+			}
+		}
+	}
+}

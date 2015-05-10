@@ -1,0 +1,119 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CodeBlock extends Scope
+		{
+			private property List:<LocalVariable> _locals;
+			protected property largeuint _localIndex;
+			private property string _breakLabel;
+			private property string _continueLabel;
+			private property string _flowControlLabel;
+
+			public property bool isClosed;
+
+			public enum BlockLabelType
+			{
+				Break,
+				Continue,
+				FlowControl,
+			}
+
+			public function void Initialize(Namespace ownerNamespace, Scope ownerScope, largeuint initialLocalIndex)
+			{
+				(this as Scope).explicit:Initialize(ownerScope);
+				_locals = new List:<LocalVariable>();
+				_localIndex = initialLocalIndex;
+			}
+
+			public intercept function largeuint LocalIndex()
+			{
+				return _localIndex;
+			}
+
+			public intercept function largeuint NumLocals()
+			{
+				return _locals.Length;
+			}
+
+			public function string BlockLabelByType(BlockLabelType blt)
+			{
+				switch(blt)
+				{
+				case(BlockLabelType.Break):
+					{
+						return _breakLabel;
+					}
+				case(BlockLabelType.Continue):
+					{
+						return _continueLabel;
+					}
+				}
+				return null;
+			}
+
+			public intercept function string FlowControlLabel()
+			{
+				return _flowControlLabel;
+			}
+
+			public function void SetFlowControlLabels(string breakLabel, string continueLabel, TokenNode flowControlLabel)
+			{
+				_breakLabel = breakLabel;
+				_continueLabel = continueLabel;
+				if(flowControlLabel == null)
+					_flowControlLabel = null;
+				else
+					_flowControlLabel = flowControlLabel.token.str;
+			}
+
+			public function void CreateLocal(CodeEmission.CodeEmissionState ces, LocalVariable localVar, TokenNode name, bool hide)
+			{
+				localVar.stackIndex = ces.CreateLocal();
+
+				_locals.Add(localVar);
+				if(name != null)
+				{
+					// See if this is in a parent block
+					local Scope checkBlock = this.owner;
+					while(checkBlock != null && checkBlock is CodeBlock)
+					{
+						if(checkBlock.symbols.ContainsKey(name.token.str))
+							Utility.CWarning(name, WarningCode.MaskedLocal, name.token.str);
+						checkBlock = checkBlock.owner;
+					}
+					Utility.Assert(checkBlock != null && (checkBlock is MemberLookupScope || checkBlock is InstanciatedNamespace));
+					this.InsertUnique(name.token.str, localVar, name);
+
+					if(hide)
+						localVar.invisibleSymbol = true;
+				}
+
+				_localIndex++;
+			}
+
+			public function void CreateLocal(CodeEmission.CodeEmissionState ces, LocalVariable localVar)
+			{
+				CreateLocal(ces, localVar, null, false);
+			}
+
+			public function GuaranteeOuterBlock FindGuaranteeingBlock()
+			{
+				local CodeBlock block = this;
+				while(!block.isRootLevel)
+				{
+					if(block.owner == null)
+						break;
+					block = block.owner as CodeBlock;
+					if(block is GuaranteeInnerBlock)
+						return block.owner as GuaranteeOuterBlock;
+				}
+				return null;
+			}
+		}
+	}
+}

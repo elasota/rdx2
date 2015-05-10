@@ -1,0 +1,32 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		namespace CodeEmission
+		{
+			public struct PInstr
+			{
+				public property POp op;
+				public property string res1;
+				public property long int1;
+				public property long int2;
+				public property string str1;
+				public property string str2;
+				public property long const[] intVar;
+
+				public property string filename;
+				public property largeuint line;
+
+				public property largeuint opstackIndex;
+				public property largeuint instructionNumber;
+				public property largeuint barrierCount;
+				public property bool reachable;
+				public property bool doNotChangeOps;
+			}
+		}
+	}
+}

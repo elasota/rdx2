@@ -1,0 +1,22 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public struct VTAM
+		{
+			public const property VType vType;
+			public const property AccessMode accessMode;
+
+			public intercept function bool AMIsPointer()
+			{
+				local AccessMode am = this.accessMode;
+				return am == AccessMode.P || am == AccessMode.CP || am == AccessMode.AnyP;
+			}
+		}
+	}
+}

@@ -1,0 +1,19 @@
+local projectInfo =
+{
+	outputFile = "rdxclasses/Apps/PluginTest.rxt",
+
+	files =
+	{
+		"rdxsrc/Apps/PluginTest.rdx",
+	},
+
+	namespaces =
+	{
+		"Apps.PluginTest",
+	},
+}
+
+importproject(projectInfo, "rdxsrc/Core.rdxproj")
+importproject(projectInfo, "rdxsrc/Apps/Common.rdxproj")
+
+return projectInfo

@@ -1,0 +1,2225 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class ASTNode
+		{
+			private property CodeLocation _codeLocation;
+
+			public intercept function CodeLocation codeLocation()
+			{
+				return _codeLocation;
+			}
+
+			public function void Initialize(LexState lexState)
+			{
+				_codeLocation = lexState.GetToken().codeLocation;
+			}
+
+			public function void Initialize(const CodeLocation cl)
+			{
+				_codeLocation = cl;
+			}
+		}
+
+		public class AttributeTaggedASTNode extends ASTNode implements IAttributeTagged
+		{
+			private property AttributeFamilyCollection _afc;
+
+			public intercept function AttributeFamilyCollection attribTags()
+			{
+				return _afc;
+			}
+
+			public intercept function void attribTags(AttributeFamilyCollection v)
+			{
+				_afc = v;
+			}
+
+			public abstract virtual intercept function string printableName();
+		}
+		
+		public class AttributeTagCollection
+		{
+			public property Dictionary:<string, TokenNode[]> attribTags;
+
+			public function void Initialize()
+			{
+				attribTags = new Dictionary:<string, TokenNode[]>();
+			}
+		}
+		
+		public class AttributeFamilyCollection
+		{
+			public property Dictionary:<string, AttributeTagCollection> attribFamilies;
+
+			public function void Initialize()
+			{
+				attribFamilies = new Dictionary:<string, AttributeTagCollection>();
+			}
+		}
+		
+		public interface IAttributeTagged
+		{
+			public intercept function AttributeFamilyCollection attribTags();
+			public intercept function void attribTags(AttributeFamilyCollection v);
+		}
+
+		public class DeclSpaceNode extends ASTNode
+		{
+			public property ASTNode[] declarations;
+		}
+		
+		public class TokenNode extends ASTNode
+		{
+			public property Token token;
+		}
+		
+		public final class UsingNode extends AttributeTaggedASTNode
+		{
+			public property TokenNode[] namespacePath;
+
+			public final intercept function string printableName()
+			{
+				return "using";
+			}
+		}
+
+		public final class NamespaceNode extends AttributeTaggedASTNode 
+		{
+			public property TokenNode name;
+			public property DeclSpaceNode members;
+
+			public final intercept function string printableName()
+			{
+				return "namespace";
+			}
+		}
+
+		public class ExpressionListNode extends ExpressionNode
+		{
+			public property ExpressionNode[] expressions;
+		}
+
+		public class TypeTupleNode extends ExpressionNode
+		{
+			public property BaselineTypeNode[] types;
+		}
+
+		public final class DefaultDeclListNode extends AttributeTaggedASTNode
+		{
+			public property DefaultDeclNode[] defaultDecls;
+
+			public final intercept function string printableName()
+			{
+				return "default decl list";
+			}
+		}
+
+		public class DefaultDeclNode extends ASTNode
+		{
+			public property TokenNode fieldName;
+			public property ExpressionNode expression;
+		}
+
+		public class AccessDescriptorNode extends ASTNode
+		{
+			public property TokenNode visibility;
+			public property TokenNode anonymousFlag;
+			public property TokenNode branchingFlag;
+			public property TokenNode nativeFlag;
+			public property TokenNode byValFlag;
+			public property TokenNode mustBeRefFlag;
+			public property TokenNode staticFlag;
+			public property TokenNode finalFlag;
+			public property TokenNode localizedFlag;
+			public property TokenNode abstractFlag;
+			public property TokenNode virtualFlag;
+			public property TokenNode interceptFlag;
+			public property TokenNode constFlag;
+			public property TokenNode mustBeConstFlag;
+		}
+
+		public class TemplateParameterDeclNode extends ASTNode
+		{
+			public property TokenNode[] parameters;
+		}
+
+		public class BaselineTypeNode extends ASTNode
+		{
+		}
+
+		public class TypeNode extends BaselineTypeNode
+		{
+			public property ExpressionNode baseType;
+		}
+
+		public class ArrayOfTypeNode extends BaselineTypeNode
+		{
+			public property BaselineTypeNode subType;
+			public property largeuint dimensions;
+			public property bool isConst;
+			public property ExpressionListNode specifiedDimensions;
+		}
+
+		public class TypeMembersNode extends ASTNode
+		{
+			public property AttributeTaggedASTNode[] members;
+		}
+
+		public class DeclarationListNode extends ASTNode
+		{
+			public property TypedDeclaration[] declarations;
+		}
+
+		public class TypedDeclaration
+		{
+			public property TokenNode name;
+			public property BaselineTypeNode type;
+		}
+
+		public class ExpressionNode extends ASTNode
+		{
+			public property ExpressionNode[] operands;
+		}
+
+		public class SingleResultNode extends ExpressionNode { }
+		public class TypeOfNode extends ExpressionNode { }
+		public class CreateTupleNode extends ExpressionNode { }
+		public class InvokeNode extends ExpressionNode { }
+		public class IndexNode extends ExpressionNode { }
+		public class TemplateNode extends ExpressionNode { }
+
+		public class CastNode extends ExpressionNode
+		{
+			public property BaselineTypeNode targetType;	// Optional, may use operands[1] for tuples instead
+		}
+
+		public class CheckCastNode extends ExpressionNode
+		{
+			public property BaselineTypeNode targetType;
+		}
+
+		public class TernaryNode extends ExpressionNode
+		{
+			public property ExpressionNode condition;
+		}
+
+		public class IndirectNode extends ExpressionNode
+		{
+			public property TokenNode explicitFlag;
+			public property TokenNode memberName;
+		}
+
+		public class NewInstanceNode extends ExpressionNode
+		{
+			public property BaselineTypeNode typeSpec;
+			public property ExpressionListNode initParameters;
+			public property ASTNode initializers;
+		}
+
+		public class UnaryOperatorNode extends ExpressionNode
+		{
+			public property TokenNode operator;
+		}
+
+		public class BinaryOperatorNode extends ExpressionNode
+		{
+			public property TokenNode operator;
+		}
+
+		public class ExpressionTerminusNode extends ExpressionNode
+		{
+			public property TokenNode token;
+		}
+
+		public class DefaultCaseNode extends ExpressionNode
+		{
+		}
+
+		public final class MemberDeclNode extends AttributeTaggedASTNode
+		{
+			public property AccessDescriptorNode accessDescriptor;
+			public property TokenNode declType;
+			public property TokenNode name;
+			public property TemplateParameterDeclNode templateParameters;
+			public property BaselineTypeNode parent;
+			public property ExpressionListNode interfaces;
+			public property TypeMembersNode typeMembers;
+			public property BaselineTypeNode specifiedType;
+			public property DeclarationListNode declList;
+			public property ExpressionListNode initializers;
+			public property TypeTupleNode returnTypes;
+			public property string codeBlockCacheID;
+			public property FunctionDeclParameterListNode parameters;
+			public property EnumerationListNode enumerants;
+
+			public final intercept function string printableName()
+			{
+				return "member decl";
+			}
+		}
+
+		public class CodeBlockNode extends ASTNode
+		{
+			public property StatementNode[] statements;
+		}
+
+		public class FunctionDeclParameterListNode extends ASTNode
+		{
+			public property FunctionDeclParameterNode[] parameters;
+		}
+
+		public class EnumerationListNode extends ASTNode
+		{
+			public property EnumerationNode[] enumerants;
+		}
+		
+		public class EnumerationNode extends ASTNode
+		{
+			public property TokenNode name;
+			public property TokenNode initializer;
+		}
+
+		public class PropertyInitializerNode extends ASTNode
+		{
+			public property TokenNode name;
+			public property ExpressionNode expression;
+		}
+
+		public class PropertyInitializerListNode extends ASTNode
+		{
+			public property PropertyInitializerNode[] initializers;
+		}
+
+		public class StatementNode extends ASTNode
+		{
+		}
+
+		public class WhileLoopNode extends StatementNode
+		{
+			public property TokenNode label;
+			public property ExpressionNode condition;
+			public property CodeBlockNode block;
+		}
+
+		public class DoLoopNode extends StatementNode
+		{
+			public property TokenNode label;
+			public property ExpressionNode condition;
+			public property CodeBlockNode block;
+		}
+
+		public class IfBlockNode extends StatementNode
+		{
+			public property ExpressionNode condition;
+			public property CodeBlockNode block;
+			public property CodeBlockNode elseBlock;
+		}
+
+		public class SwitchBlockNode extends StatementNode
+		{
+			public property ExpressionNode value;
+			public property SwitchCaseNode[] cases;
+		}
+
+		public class TryBlockNode extends StatementNode
+		{
+			public property CodeBlockNode block;
+			public property CatchBlocksNode catchBlocks;
+			public property CodeBlockNode finallyBlock;
+		}
+
+		public class ThrowNode extends StatementNode
+		{
+			public property ExpressionNode expression;
+		}
+
+		public class ForLoopNode extends StatementNode
+		{
+			public property TokenNode label;
+			public property CodeBlockNode initial;
+			public property ExpressionNode condition;
+			public property CodeBlockNode iteration;
+			public property CodeBlockNode block;
+		}
+
+		public class ForEachLoopNode extends StatementNode
+		{
+			public property TokenNode label;
+			public property CodeBlockNode block;
+			public property DeclarationListNode declarations;
+			public property ExpressionNode enumerator;
+		}
+
+		public class LocalDeclNode extends StatementNode
+		{
+			public property DeclarationListNode declarations;
+			public property ExpressionListNode initializers;
+		}
+
+		public class UsingDeclNode extends StatementNode
+		{
+			public property DeclarationListNode declarations;
+			public property ExpressionListNode initializers;
+			public property CodeBlockNode block;
+		}
+
+		public class ReturnNode extends StatementNode
+		{
+			public property ExpressionListNode returnValues;
+		}
+
+		public class BreakNode extends StatementNode
+		{
+			public property TokenNode label;
+		}
+
+		public class ContinueNode extends StatementNode
+		{
+			public property TokenNode label;
+		}
+
+		public class AssignNode extends StatementNode
+		{
+			public property ExpressionListNode destinations;
+			public property ExpressionListNode sources;
+		}
+
+		public class ModifyingOperationNode extends StatementNode
+		{
+			public property ExpressionNode destination;
+			public property TokenNode operator;
+		}
+
+		public class IncrementalOperateNode extends ModifyingOperationNode
+		{
+		}
+
+		public class OperateAndAssignNode extends ModifyingOperationNode
+		{
+			public property ExpressionNode source;
+		}
+
+		public class ExpressionStatementNode extends StatementNode
+		{
+			public property ExpressionListNode expressions;
+		}
+
+		public class CodeBlockStatementNode extends StatementNode
+		{
+			public property CodeBlockNode block;
+		}
+
+		public class MemberDeclStatementNode extends StatementNode
+		{
+			public property MemberDeclNode memberDecl;
+		}
+
+		public class FunctionDeclParameterNode extends ASTNode
+		{
+			public property TokenNode constFlag;
+			public property TokenNode notNullFlag;
+			public property BaselineTypeNode type;
+			public property TokenNode name;
+		}
+
+		public class CatchBlocksNode extends ASTNode
+		{
+			public property CatchBlockNode[] catchBlocks;
+		}
+
+		public class CatchBlockNode extends ASTNode
+		{
+			public property BaselineTypeNode exceptionType;
+			public property TokenNode exceptionName;
+			public property CodeBlockNode block;
+		}
+
+		public class SwitchCaseNode extends ASTNode
+		{
+			public property TokenNode label;
+			public property CodeBlockNode block;
+			public property ExpressionNode[] expressions;
+		}
+
+		public class Parser
+		{
+			private enum OperatorCategory
+			{
+				TypeOf,
+				New,
+				CreateTuple,
+				Isolate,
+				Template,
+				Indirect,
+				Index,
+				Invoke,
+				Cast,
+				CheckCast,
+				Unary,
+				Binary,
+				Ternary,
+			}
+
+			private property string _cachePath;
+			private property int _methodCodeIndex;
+
+			private class Operator
+			{
+				public property string symbol;
+				public property TokenType type;
+				public property OperatorCategory category;
+				public property bool validInTypeName;
+				public property bool interdicts;	// Postfix operator
+			}
+
+			private resource Operator[][] operators = new Operator[][] {
+				// Root-level must be empty
+				new Operator[] {
+				},
+				new Operator[] {
+					new Operator { symbol = "(", type = TokenType.Punctuation, category = OperatorCategory.Isolate },
+				},
+				
+				new Operator[] {
+					new Operator { symbol = "typeof", type = TokenType.Punctuation, category = OperatorCategory.TypeOf },
+					new Operator { symbol = "new", type = TokenType.RW_New, category = OperatorCategory.New },
+					new Operator { symbol = "tuple", type = TokenType.RW_Tuple, category = OperatorCategory.CreateTuple },
+				},
+	
+				new Operator[] {
+					new Operator { symbol = ":<", type = TokenType.Punctuation, category = OperatorCategory.Template, interdicts = true, validInTypeName = true },
+					new Operator { symbol = ".", type = TokenType.Punctuation, category = OperatorCategory.Indirect, interdicts = true, validInTypeName = true },
+					new Operator { symbol = "[", type = TokenType.Punctuation, category = OperatorCategory.Index, interdicts = true },
+					new Operator { symbol = "(", type = TokenType.Punctuation, category = OperatorCategory.Invoke, interdicts = true },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "-", type = TokenType.Punctuation, category = OperatorCategory.Unary },
+					new Operator { symbol = "!", type = TokenType.Punctuation, category = OperatorCategory.Unary },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "*", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "/", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "%", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "+", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "-", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "as", type = TokenType.RW_As, category = OperatorCategory.Cast, interdicts = true },
+					new Operator { symbol = "is", type = TokenType.RW_Is, category = OperatorCategory.CheckCast, interdicts = true },
+				},
+	
+				new Operator[] {
+					new Operator { symbol = "==", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "!=", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "<=", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = ">=", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "<", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = ">", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "&&", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+					new Operator { symbol = "||", type = TokenType.Punctuation, category = OperatorCategory.Binary, interdicts = true },
+				},
+
+				new Operator[] {
+					new Operator { symbol = "?", type = TokenType.Punctuation, category = OperatorCategory.Ternary, interdicts = true },
+				},
+			};
+			
+			private property HashSet:<string> _assignmentOperators;
+			private property HashSet:<string> _incrementalOperators;
+
+			public function void Initialize(string cachePath)
+			{
+				_cachePath = cachePath;
+
+				_assignmentOperators = new HashSet:<string>();
+				_assignmentOperators.Add("*=");
+				_assignmentOperators.Add("+=");
+				_assignmentOperators.Add("-=");
+				_assignmentOperators.Add("/=");
+				_assignmentOperators.Add("%=");
+
+				_incrementalOperators = new HashSet:<string>();
+				_incrementalOperators.Add("++");
+				_incrementalOperators.Add("--");
+			}
+
+			private function TokenNode TokenToNode(LexState lexState)
+			{
+				local TokenNode tn = new TokenNode(lexState);
+				tn.token = lexState.GetToken();
+				return tn;
+			}
+			
+			private function void Expect(LexState lexState, TokenType tt)
+			{
+				local Token t = lexState.GetToken();
+				if(t.tokenType != tt)
+					NativeServices.Error(t.codeLocation, ErrorCode.UnexpectedTokenType, typeof(TokenType).enumerants[tt as Enumerant.UnderlyingType].name, typeof(TokenType).enumerants[t.tokenType as uint].name, t.str);
+			}
+			
+			private function void Expect(LexState lexState, TokenType tt, string str)
+			{
+				local Token t = lexState.GetToken();
+				if(t.str != str)
+					NativeServices.Error(t.codeLocation, ErrorCode.ExpectedDifferentToken, str, t.str, null);
+				Expect(lexState, tt);
+			}
+			
+			private function void Expect(LexState lexState, string str)
+			{
+				Expect(lexState, TokenType.Punctuation, str);
+			}
+			
+			private function AccessDescriptorNode ParseAccessDescriptorNode(LexState lexState)
+			{
+				local AccessDescriptorNode node = new AccessDescriptorNode(lexState);
+
+				local Token t = lexState.GetToken();
+				switch(t.tokenType)
+				{
+				case(TokenType.RW_Private, TokenType.RW_Public, TokenType.RW_Protected):
+					{
+						node.visibility = TokenToNode(lexState);
+						lexState.NextToken();
+						t = lexState.GetToken();
+					}
+				}
+
+				if(t.tokenType == TokenType.RW_Anonymous)
+				{
+					node.anonymousFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+
+				if(t.tokenType == TokenType.RW_Branching)
+				{
+					node.branchingFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+					Expect(lexState, TokenType.RW_Native);
+				}
+
+				if(t.tokenType == TokenType.RW_Native)
+				{
+					node.nativeFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+
+				if(t.tokenType == TokenType.RW_ByVal)
+				{
+					node.byValFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+				else if(t.tokenType == TokenType.RW_MustBeRef)
+				{
+					node.mustBeRefFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+
+				if(t.tokenType == TokenType.RW_Static)
+				{
+					node.staticFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+				else
+				{
+					if(t.tokenType == TokenType.RW_Final)
+					{
+						node.finalFlag = TokenToNode(lexState);
+						lexState.NextToken();
+						t = lexState.GetToken();
+					}
+					else
+					{
+						if(t.tokenType == TokenType.RW_Localized)
+						{
+							node.localizedFlag = TokenToNode(lexState);
+							lexState.NextToken();
+							t = lexState.GetToken();
+						}
+						if(t.tokenType == TokenType.RW_Abstract)
+						{
+							node.abstractFlag = TokenToNode(lexState);
+							lexState.NextToken();
+							t = lexState.GetToken();
+						}
+						if(t.tokenType == TokenType.RW_Virtual)
+						{
+							node.virtualFlag = TokenToNode(lexState);
+							lexState.NextToken();
+							t = lexState.GetToken();
+						}
+					}
+
+					if(t.tokenType == TokenType.RW_Intercept)
+					{
+						node.interceptFlag = TokenToNode(lexState);
+						lexState.NextToken();
+						t = lexState.GetToken();
+					}
+				}
+
+				if(t.tokenType == TokenType.RW_Const)
+				{
+					node.constFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+
+				if(t.tokenType == TokenType.RW_MustBeConst)
+				{
+					node.mustBeConstFlag = TokenToNode(lexState);
+					lexState.NextToken();
+					t = lexState.GetToken();
+				}
+
+				return node;
+			}
+			
+			private function TemplateParameterDeclNode ParseTemplateParameterDeclNode(LexState lexState)
+			{
+				local TemplateParameterDeclNode node = new TemplateParameterDeclNode(lexState);
+
+				Expect(lexState, TokenType.Name);
+				local List:<TokenNode> parameters = new List:<TokenNode>();
+				while(true)
+				{
+					parameters.Add(TokenToNode(lexState));
+					lexState.NextToken();
+					if(lexState.CheckToken(">"))
+					{
+						node.parameters = parameters.ToArray();
+						return node;
+					}
+					Expect(lexState, ",");
+					lexState.NextToken();
+				}
+			}
+
+			private function BaselineTypeNode ParseTypeNode(LexState lexState, bool requireDimensions)
+			{
+				local TypeNode node = new TypeNode(lexState);
+				local List:<ArrayOfTypeNode> arrayChain;
+
+				node.baseType = ParseExpressionNode(lexState, true);
+
+				while(true)
+				{
+					local bool nextIsConst = false;
+
+					if(lexState.CheckToken(TokenType.RW_Const))
+					{
+						nextIsConst = true;
+						lexState.NextToken();
+						Expect(lexState, "[");
+					}
+
+					if(lexState.CheckToken("["))
+					{
+						lexState.NextToken();
+
+						if(arrayChain == null)
+							arrayChain = new List:<ArrayOfTypeNode>();
+
+						local ArrayOfTypeNode newNode = new ArrayOfTypeNode(lexState);
+						newNode.dimensions = 1;
+						newNode.isConst = nextIsConst;
+
+						arrayChain.Add(newNode);
+
+						if(!lexState.CheckToken(",") && !lexState.CheckToken("]"))
+						{
+							if(arrayChain.Length > 1)
+								NativeServices.Error(node.codeLocation, ErrorCode.SpecifiedOuterDimensions, null, null, null);
+
+							newNode.dimensions = 0;
+							newNode.specifiedDimensions = ParseExpressionListNode(lexState);
+							Expect(lexState, "]");
+						}
+						else
+						{
+							while(!lexState.CheckToken("]"))
+							{
+								Expect(lexState, ",");
+								lexState.NextToken();
+								newNode.dimensions = newNode.dimensions + 1;
+							}
+						}
+						lexState.NextToken();
+					}
+					else
+					{
+						if(arrayChain != null)
+						{
+							// Relink
+							local largeuint numLinks = arrayChain.Length;
+							for(local largeuint i=1;i<numLinks;i++)
+								arrayChain[i-1].subType = arrayChain[i];
+							arrayChain[numLinks-1].subType = node;
+							return arrayChain[0];
+						}
+
+						return node;
+					}
+				}
+			}
+
+			private function BaselineTypeNode ParseTypeNode(LexState lexState)
+			{
+				return this.ParseTypeNode(lexState, false);
+			}
+
+			private function ASTNode ParsePropertyInitializerListNode(LexState lexState)
+			{
+				local List:<PropertyInitializerNode> initializers = new List:<PropertyInitializerNode>();
+				local PropertyInitializerListNode node = new PropertyInitializerListNode(lexState);
+
+				if(!lexState.CheckToken(TokenType.Name))
+					return ParseExpressionListNode(lexState, true);
+
+				{
+					local Token nameCheckToken = lexState.GetToken();
+					lexState.NextToken();
+					local bool isExpressionList = !lexState.CheckToken("=");
+					lexState.ReinsertToken(nameCheckToken);
+
+					if(isExpressionList)
+						return ParseExpressionListNode(lexState, true);
+				}
+
+				local bool isFirst = true;
+
+				while(true)
+				{
+					if(lexState.CheckToken("}"))
+						break;
+					else
+					{
+						if(isFirst)
+							isFirst = false;
+						else
+						{
+							Expect(lexState, ",");
+							lexState.NextToken();
+
+							if(lexState.CheckToken("}"))
+								break;
+						}
+					}
+
+					local PropertyInitializerNode initNode = new PropertyInitializerNode(lexState);
+					Expect(lexState, TokenType.Name);
+
+					initNode.name = TokenToNode(lexState);
+					lexState.NextToken();
+
+					Expect(lexState, "=");
+					lexState.NextToken();
+
+					initNode.expression = ParseExpressionNode(lexState, false);
+
+					initializers.Add(initNode);
+				}
+
+				node.initializers = initializers.ToArray();
+				return node;
+			}
+
+			private function ExpressionListNode ParseExpressionListNode(LexState lexState, bool allowUnfollowedComma)
+			{
+				local List:<ExpressionNode> expressions = new List:<ExpressionNode>();
+
+				local ExpressionListNode node = new ExpressionListNode(lexState);
+
+				while(true)
+				{
+					if(allowUnfollowedComma && lexState.CheckToken("}"))
+						break;
+
+					expressions.Add(ParseExpressionNode(lexState, false));
+					if(!lexState.CheckToken(","))
+						break;
+
+					lexState.NextToken();
+				}
+
+				node.expressions = expressions.ToArray();
+				return node;
+			}
+
+			private function ExpressionListNode ParseExpressionListNode(LexState lexState)
+			{
+				return this.ParseExpressionListNode(lexState, false);
+			}
+
+			private function DefaultDeclNode ParseDefaultDeclNode(LexState lexState)
+			{
+				local DefaultDeclNode node = new DefaultDeclNode(lexState);
+
+				Expect(lexState, TokenType.Name);
+
+				node.fieldName = TokenToNode(lexState);
+				lexState.NextToken();
+				Expect(lexState, "=");
+				lexState.NextToken();
+				node.expression = ParseExpressionNode(lexState, false);
+
+				return node;
+			}
+
+			private function DefaultDeclListNode ParseDefaultDeclListNode(LexState lexState)
+			{
+				local DefaultDeclListNode node = new DefaultDeclListNode(lexState);
+				local List:<DefaultDeclNode> defaultDecls = new List:<DefaultDeclNode>();
+
+				Expect(lexState, TokenType.RW_Default);
+				lexState.NextToken();
+
+				while(true)
+				{
+					Expect(lexState, TokenType.Name);
+					defaultDecls.Add(ParseDefaultDeclNode(lexState));
+					if(lexState.CheckToken(";"))
+					{
+						lexState.NextToken();
+						node.defaultDecls = defaultDecls.ToArray();
+						return node;
+					}
+					Expect(lexState, ",");
+					lexState.NextToken();
+				}
+			}
+
+			private function TypeMembersNode ParseTypeMembersNode(LexState lexState)
+			{
+				local TypeMembersNode node = new TypeMembersNode(lexState);
+				local List:<AttributeTaggedASTNode> members = new List:<AttributeTaggedASTNode>();
+
+				while(true)
+				{
+					if(lexState.CheckToken("}"))
+						break;
+
+					local AttributeFamilyCollection attribTags = ParseAttributeTags(lexState);
+					local AttributeTaggedASTNode mNode;
+
+					if(lexState.CheckToken(TokenType.RW_Default))
+						mNode = ParseDefaultDeclListNode(lexState);
+					else
+						mNode = ParseMemberDeclNode(lexState);
+
+					mNode.attribTags = attribTags;
+					members.Add(mNode);
+				}
+
+				node.members = members.ToArray();
+				return node;
+			}
+
+			private function DeclarationListNode ParseDeclarationListNode(LexState lexState)
+			{
+				local DeclarationListNode node = new DeclarationListNode(lexState);
+				local BaselineTypeNode currentType = null;
+				local List:<TypedDeclaration> declarations = new List:<TypedDeclaration>();
+
+				while(true)
+				{
+					Expect(lexState, TokenType.Name);
+
+					local TokenNode declName = TokenToNode(lexState);			// Parse as a name
+					local BaselineTypeNode declType = ParseTypeNode(lexState);	// Parse as a type
+
+					if(lexState.CheckToken(TokenType.Name))
+					{
+						// Type/name combo
+						currentType = declType;
+						declName = TokenToNode(lexState);	// The real name
+						lexState.NextToken();
+					}
+					else
+					{
+						// Just a name
+						declType = currentType;
+					}
+
+					if(declType == null)
+						NativeServices.Error(declName.token.codeLocation, ErrorCode.IncompleteVariableDeclaration, null, null, null);
+
+					local TypedDeclaration tdecl = new TypedDeclaration { type = declType, name = declName };
+
+					if(!lexState.CheckToken(","))
+					{
+						node.declarations = declarations.ToArray();
+						return node;
+					}
+					lexState.NextToken();
+				}
+			}
+
+			private function TypeTupleNode ParseTypeTupleNode(LexState lexState)
+			{
+				local TypeTupleNode node = new TypeTupleNode(lexState);
+
+				if(lexState.CheckToken(TokenType.RW_Void))
+				{
+					lexState.NextToken();
+					node.types = new BaselineTypeNode[0];
+					return node;
+				}
+
+				local List:<BaselineTypeNode> types = new List:<BaselineTypeNode>();
+				while(true)
+				{
+					types.Add(ParseTypeNode(lexState));
+					if(!lexState.CheckToken(","))
+					{
+						node.types = types.ToArray();
+						return node;
+					}
+					lexState.NextToken();
+				}
+			}
+
+			private function StatementNode ParseStatementNode(LexState lexState, bool suppressExpectSemi)
+			{
+				switch(lexState.GetToken().tokenType)
+				{
+				case(TokenType.RW_While):
+					{
+						local WhileLoopNode node = new WhileLoopNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(":"))
+						{
+							lexState.NextToken();
+							Expect(lexState, TokenType.Name);
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						Expect(lexState, "(");
+						lexState.NextToken();
+						node.condition = ParseExpressionNode(lexState, false);
+
+						Expect(lexState, ")");
+						lexState.NextToken();
+
+						node.block = ParseCodeBlockNode(lexState, false);
+						return node;
+					}
+				case(TokenType.RW_Do):
+					{
+						local DoLoopNode node = new DoLoopNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(":"))
+						{
+							lexState.NextToken();
+							Expect(lexState, TokenType.Name);
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						node.block = ParseCodeBlockNode(lexState, false);
+
+						if(lexState.CheckToken(TokenType.RW_While))
+						{
+							lexState.NextToken();
+							Expect(lexState, "(");
+							lexState.NextToken();
+							node.condition = ParseExpressionNode(lexState, false);
+
+							Expect(lexState, ")");
+							lexState.NextToken();
+						}
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				case(TokenType.RW_If):
+					{
+						local IfBlockNode node = new IfBlockNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, "(");
+						lexState.NextToken();
+						node.condition = ParseExpressionNode(lexState, false);
+						Expect(lexState, ")");
+						lexState.NextToken();
+						node.block = ParseCodeBlockNode(lexState, false);
+						if(lexState.CheckToken(TokenType.RW_Else))
+						{
+							lexState.NextToken();
+							node.elseBlock = ParseCodeBlockNode(lexState, false);
+						}
+
+						return node;
+					}
+				case(TokenType.RW_Switch):
+					{
+						local SwitchBlockNode node = new SwitchBlockNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, "(");
+						lexState.NextToken();
+
+						node.value = ParseExpressionNode(lexState, false);
+						Expect(lexState, ")");
+						lexState.NextToken();
+
+						Expect(lexState, "{");
+						lexState.NextToken();
+
+						local List:<SwitchCaseNode> cases = new List:<SwitchCaseNode>();
+						while(!lexState.CheckToken("}"))
+							cases.Add(ParseSwitchCaseNode(lexState));
+						lexState.NextToken();
+
+						node.cases = cases.ToArray();
+						return node;
+					}
+				case(TokenType.RW_Try):
+					{
+						local TryBlockNode node = new TryBlockNode(lexState);
+						lexState.NextToken();
+						node.block = ParseCodeBlockNode(lexState, false);
+						ParseCatchAndFinallyBlocks(lexState, node);
+						return node;
+					}
+				case(TokenType.RW_Throw):
+					{
+						local ThrowNode node = new ThrowNode(lexState);
+						lexState.NextToken();
+						node.expression = ParseExpressionNode(lexState, false);
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				case(TokenType.RW_For):
+					{
+						local ForLoopNode node = new ForLoopNode(lexState);
+						lexState.NextToken();
+						if(lexState.CheckToken(":"))
+						{
+							lexState.NextToken();
+							Expect(lexState, TokenType.Name);
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						Expect(lexState, "(");
+						lexState.NextToken();
+
+						if(lexState.CheckToken(";"))
+							lexState.NextToken();
+						else
+							node.initial = ParseCodeBlockNode(lexState, false);
+
+						if(!lexState.CheckToken(";"))
+							node.condition = ParseExpressionNode(lexState, false);
+						Expect(lexState, ";");
+						lexState.NextToken();
+
+						if(!lexState.CheckToken(")"))
+							node.iteration = ParseCodeBlockNode(lexState, true);
+						Expect(lexState, ")");
+						lexState.NextToken();
+						node.block = ParseCodeBlockNode(lexState, false);
+
+						return node;
+					}
+				case(TokenType.RW_ForEach):
+					{
+						local ForEachLoopNode node = new ForEachLoopNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(":"))
+						{
+							lexState.NextToken();
+							Expect(lexState, TokenType.Name);
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						Expect(lexState, "(");
+						lexState.NextToken();
+
+						node.declarations = ParseDeclarationListNode(lexState);
+
+						Expect(lexState, TokenType.RW_In);
+						lexState.NextToken();
+
+						node.enumerator = ParseExpressionNode(lexState, false);
+
+						Expect(lexState, ")");
+						lexState.NextToken();
+
+						node.block = ParseCodeBlockNode(lexState, false);
+
+						return node;
+					}
+				case(TokenType.RW_Local):
+					{
+						lexState.NextToken();
+
+						local Token t = lexState.GetToken();
+						local StatementNode node;
+
+						switch(t.tokenType)
+						{
+						case(TokenType.RW_Class, TokenType.RW_Struct, TokenType.RW_Interface, TokenType.RW_Enum):
+							{
+								local MemberDeclStatementNode mdsNode = new MemberDeclStatementNode(lexState);
+								mdsNode.memberDecl = ParseMemberDeclNode(lexState);
+								node = mdsNode;
+							}
+						case(default):
+							{
+								local LocalDeclNode ldNode = new LocalDeclNode(lexState);
+								ldNode.declarations = ParseDeclarationListNode(lexState);
+
+								if(lexState.CheckToken("="))
+								{
+									lexState.NextToken();
+									ldNode.initializers = ParseExpressionListNode(lexState);
+								}
+								node = ldNode;
+							}
+						}
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				case(TokenType.RW_Using):
+					{
+						local UsingDeclNode node = new UsingDeclNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, "(");
+						lexState.NextToken();
+
+						node.declarations = ParseDeclarationListNode(lexState);
+
+						Expect(lexState, "=");
+						lexState.NextToken();
+						node.initializers = ParseExpressionListNode(lexState);
+
+						Expect(lexState, ")");
+						lexState.NextToken();
+
+						node.block = ParseCodeBlockNode(lexState, false);
+
+						return node;
+					}
+				case(TokenType.RW_Return):
+					{
+						local ReturnNode node = new ReturnNode(lexState);
+
+						lexState.NextToken();
+						if(lexState.CheckToken(";"))
+						{
+							lexState.NextToken();
+							return node;
+						}
+
+						node.returnValues = ParseExpressionListNode(lexState);
+						Expect(lexState, ";");
+						lexState.NextToken();
+
+						return node;
+					}
+				case(TokenType.RW_Continue):
+					{
+						local ContinueNode node = new ContinueNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(TokenType.Name))
+						{
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				case(TokenType.RW_Break):
+					{
+						local BreakNode node = new BreakNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(TokenType.Name))
+						{
+							node.label = TokenToNode(lexState);
+							lexState.NextToken();
+						}
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				case(default):
+					{
+						if(lexState.CheckToken("{"))
+						{
+							local CodeBlockStatementNode node = new CodeBlockStatementNode(lexState);
+							node.block = ParseCodeBlockNode(lexState, false);
+							return node;
+						}
+
+						local ExpressionListNode exListNode = ParseExpressionListNode(lexState);
+						local StatementNode node = null;
+
+						if(lexState.CheckToken("="))
+						{
+							lexState.NextToken();
+
+							local AssignNode assignNode = new AssignNode(lexState);
+							assignNode.destinations = exListNode;
+							assignNode.sources = ParseExpressionListNode(lexState);
+
+							node = assignNode;
+						}
+						else
+						{
+							local Token t = lexState.GetToken();
+
+							if(t.tokenType == TokenType.Punctuation)
+							{
+								if(_assignmentOperators[t.str])
+								{
+									local TokenNode operatorNode = TokenToNode(lexState);
+									lexState.NextToken();
+									local OperateAndAssignNode oaaNode = new OperateAndAssignNode(lexState);
+
+									if(exListNode.expressions.Length != 1)
+										NativeServices.Error(t.codeLocation, ErrorCode.MultipleValueOOA, null, null, null);
+
+									oaaNode.destination = exListNode.expressions[0];
+									oaaNode.source = ParseExpressionNode(lexState, false);
+									oaaNode.operator = operatorNode;
+
+									node = oaaNode;
+								}
+								else if(_incrementalOperators[t.str])
+								{
+									local TokenNode operatorNode = TokenToNode(lexState);
+									lexState.NextToken();
+									local IncrementalOperateNode incoNode = new IncrementalOperateNode(lexState);
+
+									if(exListNode.expressions.Length != 1)
+										NativeServices.Error(t.codeLocation, ErrorCode.MultipleValueOOA, null, null, null);
+
+									incoNode.destination = exListNode.expressions[0];
+									incoNode.operator = operatorNode;
+
+									node = incoNode;
+								}
+							}
+						}
+
+						if(node == null)
+						{
+							local ExpressionStatementNode exsNode = new ExpressionStatementNode(lexState);
+							exsNode.expressions = exListNode;
+						}
+
+						if(!suppressExpectSemi)
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+
+						return node;
+					}
+				}
+			}
+
+			private function CodeBlockNode ParseCodeBlockNode(LexState lexState, bool suppressExpectSemi)
+			{
+				local bool isMultiStatement = false;
+				if(lexState.CheckToken("{"))
+				{
+					isMultiStatement = true;
+					lexState.NextToken();
+				}
+
+				local CodeBlockNode node = new CodeBlockNode(lexState);
+				local List:<StatementNode> statements = new List:<StatementNode>();
+
+				while(true)
+				{
+					if(isMultiStatement && lexState.CheckToken("}"))
+					{
+						lexState.NextToken();
+						break;
+					}
+					statements.Add(ParseStatementNode(lexState, (!isMultiStatement) && suppressExpectSemi));
+					if(!isMultiStatement)
+						break;
+				}
+
+				node.statements = statements.ToArray();
+				return node;
+			}
+
+			private function FunctionDeclParameterListNode ParseFunctionDeclParameterListNode(LexState lexState)
+			{
+				local FunctionDeclParameterListNode node = new FunctionDeclParameterListNode(lexState);
+
+				if(lexState.CheckToken(")"))
+				{
+					node.parameters = new FunctionDeclParameterNode[0];
+					lexState.NextToken();
+					return node;
+				}
+
+				local List:<FunctionDeclParameterNode> parameters = new List:<FunctionDeclParameterNode>();
+
+				while(true)
+				{
+					parameters.Add(ParseFunctionDeclParameterNode(lexState));
+					if(lexState.CheckToken(")"))
+					{
+						lexState.NextToken();
+						node.parameters = parameters.ToArray();
+						return node;
+					}
+					Expect(lexState, ",");
+					lexState.NextToken();
+				}
+			}
+
+			private function FunctionDeclParameterNode ParseFunctionDeclParameterNode(LexState lexState)
+			{
+				local FunctionDeclParameterNode node = new FunctionDeclParameterNode(lexState);
+
+				if(lexState.CheckToken(TokenType.RW_Const))
+				{
+					node.constFlag = TokenToNode(lexState);
+					lexState.NextToken();
+				}
+
+				if(lexState.CheckToken(TokenType.RW_NotNull))
+				{
+					node.notNullFlag = TokenToNode(lexState);
+					lexState.NextToken();
+				}
+
+				node.type = ParseTypeNode(lexState);
+
+				Expect(lexState, TokenType.Name);
+				node.name = TokenToNode(lexState);
+
+				lexState.NextToken();
+
+				return node;
+			}
+
+			private function SwitchCaseNode ParseSwitchCaseNode(LexState lexState)
+			{
+				local SwitchCaseNode node = new SwitchCaseNode(lexState);
+
+				Expect(lexState, TokenType.RW_Case);
+				lexState.NextToken();
+
+				if(lexState.CheckToken(":"))
+				{
+					lexState.NextToken();
+					Expect(lexState, TokenType.Name);
+					node.label = TokenToNode(lexState);
+					lexState.NextToken();
+				}
+
+				Expect(lexState, "(");
+				lexState.NextToken();
+
+				local List:<ExpressionNode> expressions = new List:<ExpressionNode>();
+
+				while(true)
+				{
+					if(lexState.CheckToken(TokenType.RW_Default))
+					{
+						expressions.Add(new DefaultCaseNode(lexState));
+						lexState.NextToken();
+					}
+					else
+						expressions.Add(ParseExpressionNode(lexState, false));
+
+					if(lexState.CheckToken(")"))
+						break;
+					Expect(lexState, ",");
+					lexState.NextToken();
+				}
+
+				lexState.NextToken();
+				Expect(lexState, ":");
+				lexState.NextToken();
+
+				node.block = ParseCodeBlockNode(lexState, false);
+
+				node.expressions = expressions.ToArray();
+				return node;
+			}
+
+			private function void ParseCatchAndFinallyBlocks(LexState lexState, TryBlockNode node)
+			{
+				local CatchBlocksNode catchNodes = new CatchBlocksNode(lexState);
+				local List:<CatchBlockNode> catchBlocks = new List:<CatchBlockNode>();
+
+				while(true)
+				{
+					if(lexState.CheckToken(TokenType.RW_Catch))
+					{
+						lexState.NextToken();
+
+						local CatchBlockNode catchNode = new CatchBlockNode(lexState);
+						if(lexState.CheckToken("("))
+						{
+							lexState.NextToken();
+							catchNode.exceptionType = ParseTypeNode(lexState);
+							Expect(lexState, TokenType.Name);
+							catchNode.exceptionName = TokenToNode(lexState);
+							lexState.NextToken();
+							Expect(lexState, ")");
+							lexState.NextToken();
+						}
+						catchNode.block = ParseCodeBlockNode(lexState, false);
+
+						catchBlocks.Add(catchNode);
+						node.catchBlocks = catchNodes;
+					}
+					else if(lexState.CheckToken(TokenType.RW_Finally))
+					{
+						lexState.NextToken();
+						node.finallyBlock = ParseCodeBlockNode(lexState, false);
+					}
+					else
+						break;
+				}
+
+				catchNodes.catchBlocks = catchBlocks.ToArray();
+			}
+
+			private function ExpressionNode ParseExpressionTerminusNode(LexState lexState)
+			{
+				local Token t = lexState.GetToken();
+				switch(t.tokenType)
+				{
+				case(TokenType.Name, TokenType.Number, TokenType.String, TokenType.RW_This, TokenType.RW_True, TokenType.RW_False, TokenType.RW_Null):
+					{
+						local ExpressionTerminusNode node = new ExpressionTerminusNode(lexState);
+						node.token = TokenToNode(lexState);
+						lexState.NextToken();
+						return node;
+					}
+				case(default):
+					{
+						NativeServices.Error(t.codeLocation, ErrorCode.ExpectedTerminus, t.str, null, null);
+						return null;
+					}
+				}
+			}
+
+			private function ExpressionNode ParseExpressionNode(LexState lexState, bool isTypeName, largeuint priorityLevel)
+			{
+				if(priorityLevel == 0)
+					return ParseExpressionTerminusNode(lexState);
+
+				// Single result node
+				foreach(Operator operator in operators[priorityLevel])
+				{
+					local Token t = lexState.GetToken();
+					if((operator.validInTypeName || !isTypeName) && lexState.CheckToken(operator.symbol, operator.type))
+					{
+						switch(operator.category)
+						{
+						case(OperatorCategory.Isolate):
+							{
+								lexState.NextToken();
+								local ExpressionNode node = new SingleResultNode(lexState);
+								node.operands = new ExpressionNode[] { ParseExpressionNode(lexState, isTypeName) };	// Top priority
+								Expect(lexState, ")");
+								lexState.NextToken();
+								return node;
+							}
+						case(OperatorCategory.Unary):
+							{
+								local UnaryOperatorNode node = new UnaryOperatorNode(lexState);
+								node.operator = TokenToNode(lexState);
+								lexState.NextToken();
+								node.operands = new ExpressionNode[] { ParseExpressionNode(lexState, isTypeName, priorityLevel) };
+								return node;
+							}
+						case(OperatorCategory.New):
+							{
+								local NewInstanceNode node = new NewInstanceNode(lexState);
+								lexState.NextToken();
+
+								node.typeSpec = ParseTypeNode(lexState, true);
+
+								if(node.typeSpec.GetType() != typeof(ArrayOfTypeNode) && lexState.CheckToken("("))
+								{
+									lexState.NextToken();
+
+									if(!lexState.CheckToken(")"))
+									{
+										node.initParameters = ParseExpressionListNode(lexState);
+										Expect(lexState, ")");
+									}
+									lexState.NextToken();
+								}
+								else if(lexState.CheckToken("{"))
+								{
+									lexState.NextToken();
+
+									node.initializers = ParsePropertyInitializerListNode(lexState);
+
+									Expect(lexState, "}");
+									lexState.NextToken();
+								}
+
+								return node;
+							}
+						case(OperatorCategory.TypeOf):
+							{
+								local TypeOfNode node = new TypeOfNode(lexState);
+								lexState.NextToken();
+								Expect(lexState, "(");
+								lexState.NextToken();
+								node.operands = new ExpressionNode[] { ParseExpressionNode(lexState, false) };
+								Expect(lexState, ")");
+								lexState.NextToken();
+								return node;
+							}
+						case(OperatorCategory.CreateTuple):
+							{
+								local CreateTupleNode node = new CreateTupleNode(lexState);
+								lexState.NextToken();
+								Expect(lexState, "(");
+								lexState.NextToken();
+								node.operands = new ExpressionNode[] { ParseExpressionListNode(lexState) };
+								Expect(lexState, ")");
+								lexState.NextToken();
+								return node;
+							}
+						case(default):
+							{
+								// Binary operator that isn't valid here
+							}
+						}
+					}
+				}
+
+				local ExpressionNode leftNode = ParseExpressionNode(lexState, isTypeName, priorityLevel - 1);
+
+				while(true)
+				{
+					local Token t = lexState.GetToken();
+					local bool matchedOperator = false;
+
+					foreach(Operator operator in operators[priorityLevel])
+					{
+						if(operator.interdicts && lexState.CheckToken(operator.symbol, operator.type) && (operator.validInTypeName || !isTypeName))
+						{
+							matchedOperator = true;
+							local ExpressionNode operatorNode;
+
+							switch(operator.category)
+							{
+							case(OperatorCategory.Binary):
+								{
+									operatorNode = new BinaryOperatorNode(lexState);
+									(operatorNode as BinaryOperatorNode).operator = TokenToNode(lexState);
+									lexState.NextToken();
+									operatorNode.operands = new ExpressionNode[] { leftNode, ParseExpressionNode(lexState, isTypeName, priorityLevel-1) };
+								}
+							case(OperatorCategory.Invoke):
+								{
+									operatorNode = new InvokeNode(lexState);
+									lexState.NextToken();
+									operatorNode.operands = new ExpressionNode[] { leftNode, null };
+									if(!lexState.CheckToken(")"))
+										operatorNode.operands[1] = ParseExpressionListNode(lexState);
+									Expect(lexState, ")");
+									lexState.NextToken();
+								}
+							case(OperatorCategory.Index):
+								{
+									operatorNode = new IndexNode(lexState);
+									lexState.NextToken();
+									operatorNode.operands = new ExpressionNode[] { leftNode, ParseExpressionListNode(lexState) };
+									Expect(lexState, "]");
+									lexState.NextToken();
+								}
+							case(OperatorCategory.Template):
+								{
+									operatorNode = new TemplateNode(lexState);
+									lexState.NextToken();
+									operatorNode.operands = new ExpressionNode[] { leftNode, ParseTypeTupleNode(lexState) };
+									Expect(lexState, ">");
+									lexState.NextToken();
+								}
+							case(OperatorCategory.Indirect):
+								{
+									operatorNode = new IndirectNode(lexState);
+									lexState.NextToken();
+
+									if(lexState.GetToken().tokenType == TokenType.RW_Explicit)
+									{
+										(operatorNode as IndirectNode).explicitFlag = TokenToNode(lexState);
+										lexState.NextToken();
+										Expect(lexState, ":");
+										lexState.NextToken();
+									}
+
+									Expect(lexState, TokenType.Name);
+
+									operatorNode.operands = new ExpressionNode[] { leftNode };
+									(operatorNode as IndirectNode).memberName = TokenToNode(lexState);
+									lexState.NextToken();
+								}
+							case(OperatorCategory.Ternary):
+								{
+									operatorNode = new TernaryNode(lexState);
+									lexState.NextToken();
+									(operatorNode as TernaryNode).condition = leftNode;
+									local ExpressionNode trueExpr = ParseExpressionNode(lexState, false);
+									Expect(lexState, ":");
+									lexState.NextToken();
+									local ExpressionNode falseExpr = ParseExpressionNode(lexState, false);
+
+									operatorNode.operands = new ExpressionNode[] { trueExpr, falseExpr };
+								}
+							case(OperatorCategory.Cast):
+								{
+									operatorNode = new CastNode(lexState);
+									lexState.NextToken();
+
+									if(lexState.CheckToken("("))
+									{
+										lexState.NextToken();
+										operatorNode.operands = new ExpressionNode[] { leftNode, ParseTypeTupleNode(lexState) };
+										Expect(lexState, ")");
+										lexState.NextToken();
+									}
+									else
+									{
+										operatorNode.operands = new ExpressionNode[] { leftNode };
+										(operatorNode as CastNode).targetType = ParseTypeNode(lexState);
+									}
+								}
+							case(OperatorCategory.CheckCast):
+								{
+									operatorNode = new CheckCastNode(lexState);
+									lexState.NextToken();
+									operatorNode.operands = new ExpressionNode[] { leftNode };
+									(operatorNode as CheckCastNode).targetType = ParseTypeNode(lexState);
+								}
+							case(default):
+								{
+									local Token tk = lexState.GetToken();
+									NativeServices.Error(tk.codeLocation, ErrorCode.UnsupportedOperator, typeof(OperatorCategory).enumerants[operator.category as uint].name, null, null);
+								}
+							}
+
+							leftNode = operatorNode;
+
+							break;	// Stop scanning for matching operators
+						}
+					}
+
+					if(!matchedOperator)
+						break;
+				}
+
+				return leftNode;
+			}
+
+
+			private function ExpressionNode BUGTEST(LexState lexState, bool isTypeName, uint priorityLevel)
+			{
+				local ExpressionNode leftNode = null;
+
+				while(true)
+				{
+					local Token t = lexState.GetToken();
+					local bool matchedOperator = false;
+					local Operator operator;
+
+					{
+						{
+							matchedOperator = true;
+							local ExpressionNode operatorNode;
+
+							switch(operator.category)
+							{
+							case(OperatorCategory.Cast):
+								{
+									operatorNode = new CastNode(lexState);
+									lexState.NextToken();
+
+									if(lexState.CheckToken("("))
+									{
+										lexState.NextToken();
+									}
+									else
+									{
+										operatorNode.operands = new ExpressionNode[] { leftNode };
+										(operatorNode as CastNode).targetType = ParseTypeNode(lexState);
+									}
+								}
+							}
+
+							leftNode = operatorNode;
+
+							break;	// Stop scanning for matching operators
+						}
+					}
+
+					if(!matchedOperator)
+						break;
+				}
+
+				return leftNode;
+			}			
+			
+			private function ExpressionNode ParseExpressionNode(LexState lexState, bool isTypeName)
+			{
+				return this.ParseExpressionNode(lexState, isTypeName, operators.Length - 1);
+			}
+
+			private function EnumerationNode ParseEnumerationNode(LexState lexState)
+			{
+				local EnumerationNode node = new EnumerationNode(lexState);
+
+				Expect(lexState, TokenType.Name);
+
+				node.name = TokenToNode(lexState);
+				lexState.NextToken();
+
+				if(lexState.CheckToken("="))
+				{
+					lexState.NextToken();
+					Expect(lexState, TokenType.Number);
+					node.initializer = TokenToNode(lexState);
+
+					lexState.NextToken();
+				}
+
+				return node;
+			}
+
+			private function EnumerationListNode ParseEnumerationListNode(LexState lexState)
+			{
+				local EnumerationListNode node = new EnumerationListNode(lexState);
+
+				Expect(lexState, TokenType.Name);
+
+				local List:<EnumerationNode> enumerants = new List:<EnumerationNode>();
+				while(true)
+				{
+					if(lexState.GetToken().tokenType != TokenType.Name)
+					{
+						node.enumerants = enumerants.ToArray();
+						return node;
+					}
+
+					enumerants.Add(ParseEnumerationNode(lexState));
+
+					if(!lexState.CheckToken(","))
+					{
+						node.enumerants = enumerants.ToArray();
+						return node;
+					}
+					lexState.NextToken();
+				}
+			}
+
+			private function UsingNode ParseUsingNode(LexState lexState)
+			{
+				local UsingNode node = new UsingNode(lexState);
+
+				lexState.NextToken();
+
+				local List:<TokenNode> namespacePath = new List:<TokenNode>();
+
+				while(true)
+				{
+					Expect(lexState, TokenType.Name);
+					namespacePath.Add(TokenToNode(lexState));
+					lexState.NextToken();
+					if(lexState.CheckToken(";"))
+						break;
+					Expect(lexState, ".");
+					lexState.NextToken();
+				}
+				lexState.NextToken();
+
+				node.namespacePath = namespacePath.ToArray();
+				return node;
+			}
+
+			private function NamespaceNode ParseNamespaceNode(LexState lexState)
+			{
+				local NamespaceNode node = new NamespaceNode(lexState);
+				lexState.NextToken();
+
+				Expect(lexState, TokenType.Name);
+				node.name = TokenToNode(lexState);
+
+				lexState.NextToken();
+				
+				Expect(lexState, "{");
+				lexState.NextToken();
+
+				node.members = ParseDeclSpaceNode(lexState);
+
+				Expect(lexState, "}");
+				lexState.NextToken();
+
+				return node;
+			}
+
+			private function AttributeFamilyCollection ParseAttributeTags(LexState lexState)
+			{
+				if(!lexState.CheckToken("["))
+					return null;
+
+				local AttributeFamilyCollection afc = new AttributeFamilyCollection();
+
+				while(lexState.CheckToken("["))
+				{
+					lexState.NextToken();
+					Expect(lexState, TokenType.Name);
+
+					local string tagType = lexState.GetToken().str;
+					lexState.NextToken();
+
+					local AttributeTagCollection atc;
+					if(!afc.attribFamilies.ContainsKey(tagType))
+					{
+						atc = new AttributeTagCollection();
+						afc.attribFamilies[tagType] = atc;
+					}
+					else
+						atc = afc.attribFamilies[tagType];
+
+					while(!lexState.CheckToken("]"))
+					{
+						Expect(lexState, TokenType.Name);
+						local TokenNode attribNameNode = TokenToNode(lexState);
+						local string attribName = lexState.GetToken().str;
+						lexState.NextToken();
+
+						if(atc.attribTags.ContainsKey(attribName))
+						{
+							local Token t = lexState.GetToken();
+							NativeServices.Error(t.codeLocation, ErrorCode.RepeatedAttribute, attribName, null, null);
+						}
+
+						local List:<TokenNode> attribData = new List:<TokenNode>();
+
+						if(lexState.CheckToken("("))
+						{
+							lexState.NextToken();
+
+							while(!lexState.CheckToken(")"))
+							{
+								local Token t = lexState.GetToken();
+								if(t.tokenType != TokenType.Number && t.tokenType != TokenType.String)
+									Expect(lexState, TokenType.Name);
+
+								attribData.Add(TokenToNode(lexState));
+								lexState.NextToken();
+							}
+							lexState.NextToken();
+						}
+
+						atc.attribTags[attribName] = attribData.ToArray();
+					}
+					lexState.NextToken();
+				}
+
+				return afc;
+			}
+			
+			public function MemberDeclNode ParseMemberDeclNode(LexState lexState)
+			{
+				local MemberDeclNode node = new MemberDeclNode(lexState);
+
+				node.accessDescriptor = ParseAccessDescriptorNode(lexState);
+
+				local Token t = lexState.GetToken();
+
+				switch(t.tokenType)
+				{
+					case(TokenType.RW_Class, TokenType.RW_Struct, TokenType.RW_Interface):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+
+						Expect(lexState, TokenType.Name);
+						node.name = TokenToNode(lexState);
+						lexState.NextToken();
+
+						if(lexState.CheckToken(":<"))
+						{
+							lexState.NextToken();
+							node.templateParameters = ParseTemplateParameterDeclNode(lexState);
+							Expect(lexState, ">");
+							lexState.NextToken();
+						}
+
+						if(lexState.CheckToken(TokenType.RW_Extends) && t.tokenType == TokenType.RW_Class)
+						{
+							lexState.NextToken();
+							node.parent = ParseTypeNode(lexState);
+						}
+
+						if(lexState.CheckToken(TokenType.RW_Implements) && t.tokenType == TokenType.RW_Class)
+						{
+							lexState.NextToken();
+							node.interfaces = ParseExpressionListNode(lexState);
+						}
+
+						if(lexState.CheckToken("{"))
+						{
+							lexState.NextToken();
+							node.typeMembers = ParseTypeMembersNode(lexState);
+							Expect(lexState, "}");
+						}
+						else
+							Expect(lexState, ";");
+						lexState.NextToken();
+					}
+					case(TokenType.RW_TypeDef):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, TokenType.Name);
+						node.name = TokenToNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, "=");
+						lexState.NextToken();
+						node.specifiedType = ParseTypeNode(lexState);
+						Expect(lexState, ";");
+						lexState.NextToken();
+					}
+					case(TokenType.RW_Property, TokenType.RW_Resource):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+						node.declList = ParseDeclarationListNode(lexState);
+						if(lexState.CheckToken("="))
+						{
+							lexState.NextToken();
+							node.initializers = ParseExpressionListNode(lexState);
+						}
+
+						Expect(lexState, ";");
+						lexState.NextToken();
+					}
+					case(TokenType.RW_Coerce, TokenType.RW_Promote):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+						node.returnTypes = ParseTypeTupleNode(lexState);
+						if(lexState.CheckToken("{"))
+						{
+							local CodeBlockNode codeBlock = ParseCodeBlockNode(lexState, false);
+							local string cbPath = _cachePath + "_mcb_" + (_methodCodeIndex as string) + ".rdxobj";
+							NativeServices.ExportObject(cbPath, codeBlock);
+							_methodCodeIndex++;
+							node.codeBlockCacheID = cbPath;
+						}
+						else
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+					}
+					case(TokenType.RW_Function):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+
+						node.returnTypes = ParseTypeTupleNode(lexState);
+
+						Expect(lexState, TokenType.Name);
+						node.name = TokenToNode(lexState);
+						lexState.NextToken();
+
+						Expect(lexState, "(");
+						lexState.NextToken();
+						node.parameters = ParseFunctionDeclParameterListNode(lexState);
+
+						if(lexState.CheckToken("{"))
+						{
+							local CodeBlockNode codeBlock = ParseCodeBlockNode(lexState, false);
+							local string cbPath = _cachePath + "_mcb_" + (_methodCodeIndex as string) + ".rdxobj";
+							NativeServices.ExportObject(cbPath, codeBlock);
+							_methodCodeIndex++;
+							node.codeBlockCacheID = cbPath;
+						}
+						else
+						{
+							Expect(lexState, ";");
+							lexState.NextToken();
+						}
+					}
+					case(TokenType.RW_Delegate):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+
+						node.returnTypes = ParseTypeTupleNode(lexState);
+
+						Expect(lexState, TokenType.Name);
+						node.name = TokenToNode(lexState);
+						lexState.NextToken();
+						Expect(lexState, "(");
+						lexState.NextToken();
+
+						node.parameters = ParseFunctionDeclParameterListNode(lexState);
+						Expect(lexState, ";");
+						lexState.NextToken();
+					}
+					case(TokenType.RW_Enum):
+					{
+						node.declType = TokenToNode(lexState);
+						lexState.NextToken();
+
+						Expect(lexState, TokenType.Name);
+						node.name = TokenToNode(lexState);
+						lexState.NextToken();
+
+						Expect(lexState, "{");
+						lexState.NextToken();
+
+						node.enumerants = ParseEnumerationListNode(lexState);
+						Expect(lexState, "}");
+						lexState.NextToken();
+					}
+					case(default):
+					{
+						NativeServices.Error(t.codeLocation, ErrorCode.UnknownToken, t.str, null, null);
+					}
+				}
+
+				return node;
+			}
+
+			public function DeclSpaceNode ParseDeclSpaceNode(LexState lexState)
+			{
+				local DeclSpaceNode node = new DeclSpaceNode(lexState);
+				local List:<ASTNode> declarations = new List:<ASTNode>();
+
+				while(!lexState.EOF)
+				{
+					local AttributeFamilyCollection attribTags = ParseAttributeTags(lexState);
+					local Token t = lexState.GetToken();
+
+					if(t.tokenType == TokenType.RW_Namespace)
+					{
+						local NamespaceNode nsNode = ParseNamespaceNode(lexState);
+						nsNode.attribTags = attribTags;
+						declarations.Add(nsNode);
+					}
+					else if(t.tokenType == TokenType.RW_Using)
+					{
+						local UsingNode usingNode = ParseUsingNode(lexState);
+						usingNode.attribTags = attribTags;
+						declarations.Add(usingNode);
+					}
+					else if(lexState.CheckToken("}"))
+					{
+						if(attribTags != null)
+							NativeServices.Error(t.codeLocation, ErrorCode.OrphanAttributes, null, null, null);
+						node.declarations = declarations.ToArray();
+						return node;
+					}
+					else
+					{
+						local MemberDeclNode memberDeclNode = ParseMemberDeclNode(lexState);
+						(memberDeclNode as IAttributeTagged).attribTags = attribTags;
+						declarations.Add(memberDeclNode);
+					}
+				}
+
+				node.declarations = declarations.ToArray();
+				return node;
+			}
+			
+			public function void Parse(LexState lexState)
+			{
+				lexState.NextToken();	// Get the first token
+				
+				local DeclSpaceNode node = ParseDeclSpaceNode(lexState);
+				if(!lexState.EOF)
+				{
+					local Token t = lexState.GetToken();
+					NativeServices.Error(t.codeLocation, ErrorCode.UnknownToken, t.str, null, null);
+				}
+				NativeServices.DebugMessage("Saving...");
+				NativeServices.ExportObject(_cachePath + ".rdxobj", node);
+			}
+
+			public static function uint main(string const[] args)
+			{
+				foreach(string arg, largeuint index in args)
+				{
+					if(index != 0)
+					{
+						NativeServices.DebugMessage("Parsing " + arg + "...");
+						local LexState lex = new LexState(NativeServices.ReadFile(arg), arg);
+						local Parser parser = new Parser(args[0] + NativeServices.HashString(arg));
+						parser.Parse(lex);
+					}
+				}
+
+				return 0;
+			}
+		}
+	}
+}

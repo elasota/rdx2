@@ -1,0 +1,181 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class TypeFinalizer extends CompilableObject
+		{
+			public property StructuredTypeObject st;
+
+			public function void Initialize(CompilerState cs, StructuredTypeObject st)
+			{
+				this.st = st;
+
+				cs.uncompiled.Add(this);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local StructuredTypeObject st = this.st;
+			
+				// Make sure all methods are compiled
+				foreach(MethodObject method in st.methods)
+					if(!method.isCompiled)
+					{
+						this._incriminateNode = method.incriminateNode;
+						return false;
+					}
+
+				// Make sure all interfaces are compiled and finalized
+				foreach(InterfaceImplementationObject i in st.interfaces)
+				{
+					local StructuredTypeObject ist = i.interfaceType;
+					if(!ist.isCompiled || !ist.finalizer.isCompiled)
+					{
+						this._incriminateNode = i.incriminateNode;
+						return false;
+					}
+				}
+
+				local Dictionary:<string, MethodObject> methodsBySignature = new Dictionary:<string, MethodObject>();
+				local HashSet:<ICallable> deletedMethods = new HashSet:<ICallable>();
+
+				// Go back through method signatures and handle overloads
+				foreach(MethodObject method in st.methods)
+				{
+					local string methodSignature = method.signature;
+
+					local MethodObject collision = null;
+					if(methodsBySignature.ContainsKey(methodSignature))
+						collision = methodsBySignature[methodSignature];
+					local largeuint virtualIndex = st.virtualMethods.Length;
+					local bool newVirtual = true;
+
+					// See if there's an existing method with this name
+					if(collision != null)
+					{
+						if(collision.definedByType == method.definedByType)
+							Utility.CError(method.name, ErrorCode.DuplicatedMethod);
+
+						if(collision.isVirtual)
+						{
+							if(method.isStatic)
+								Utility.CError(method.name, ErrorCode.OverridedVirtualWithStatic);
+
+							if(collision.returnSignature != method.returnSignature)
+								Utility.CError(method.name, ErrorCode.OverrideHasDifferentReturn);
+
+							if(!method.isVirtual && !method.isFinal)
+								Utility.CError(method.name, ErrorCode.InvalidOverrideFlags);
+
+							method.vftIndex = collision.vftIndex;
+							method.isVirtual = true;
+							method.isOverriding = true;
+
+							// Replace all entries in the vtable
+							foreach(MethodObject vmethod, largeuint vidx in st.virtualMethods)
+							{
+								if(vmethod == collision)
+								{
+									st.virtualMethods[vidx] = method;
+									st.aliasVFT = null;
+								}
+							}
+
+							newVirtual = false;
+						}
+
+						deletedMethods.Add(collision);
+					}
+
+					if(method.isFinal && !method.isOverriding)
+						Utility.CError(method.name, ErrorCode.FinalMethodDoesNotOverride);
+
+					if(method.definedByType == st)
+					{
+						// New virtual method
+						if(method.isVirtual && newVirtual)
+						{
+							method.isVirtual = true;
+							method.vftIndex = virtualIndex;
+							st.virtualMethods.Add(method);
+							st.aliasVFT = null;
+						}
+					}
+
+					methodsBySignature[methodSignature] = method;
+				}
+
+				// Rebuild method groups
+				foreach(MethodGroup mg in st.methodGroups)
+				{
+					local List:<ICallable> rebuilt = new List:<ICallable>();
+					foreach(ICallable m in mg.overloads)
+					{
+						if(!deletedMethods[m])
+							rebuilt.Add(m);
+					}
+					mg.overloads = rebuilt;
+				}
+
+				// Rebuild the main methods list
+				{
+					local List:<MethodObject> rebuilt = new List:<MethodObject>();
+					foreach(MethodObject m in st.methods)
+					{
+						if(!deletedMethods[m])
+							rebuilt.Add(m);
+					}
+					st.methods = rebuilt;
+				}
+			
+				foreach(InterfaceImplementationObject i in st.interfaces)
+				{
+					if(!i.wasDefined)
+					{
+						i.wasDefined = true;
+						i.vftOffset = st.virtualMethods.Length;
+
+						foreach(MethodObject m in i.interfaceType.methods)
+						{
+							if(!methodsBySignature.ContainsKey(m.signature))
+								Utility.CError(i.incriminateNode, ErrorCode.InterfaceMethodMissing, m.signature, i.interfaceType.longName);
+
+							local MethodObject localMethod = methodsBySignature[m.signature];
+							if(localMethod.returnTypes.longName != m.returnTypes.longName)
+								Utility.CError(i.incriminateNode, ErrorCode.InterfaceReturnTypeMismatch, m.signature);
+
+							st.virtualMethods.Add(methodsBySignature[m.signature]);
+						}
+						st.aliasInterfaces = null;	// Can't recycle the interfaces table
+						st.aliasVFT = null;
+					}
+				}
+
+				foreach(MethodObject m in st.virtualMethods)
+				{
+					if(m.isAbstract)
+					{
+						st.isAbstract = true;
+						st.abstractBlame = m;
+						break;
+					}
+				}
+
+				FinishCompile();
+			
+				return true;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "type finalizer";
+			}
+		}
+	}
+}
+

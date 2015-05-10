@@ -1,0 +1,77 @@
+using Core;
+using Core.RDX;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class MethodCall extends ValueExpression implements IEmittableLogical, IEmittable
+		{
+			public property ICallable method;
+			public property bool isExplicit;
+			public property IValueExpression delegateExpr;
+			public property IValueExpression parameters;
+			public property IValueExpression convertedParameters;	// Usually nothing, but used for intercepts
+
+			public function void Initialize(ICallable method, bool isExplicit, IValueExpression delegateExpr, IValueExpression parameters, const VTAMCollection vtams)
+			{
+				this.method = method;
+				this.isExplicit = isExplicit;
+				this.delegateExpr = delegateExpr;
+				this.parameters = parameters;
+				this._vtams = vtams;
+			}
+
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel)
+			{
+				if(this.method is MethodObject)
+				{
+					local MethodObject mo = this.method as MethodObject;
+					if(mo.isBranching)
+					{
+						CodeEmission.Emit.EmitValues(cs, ces, this.parameters, false);
+						ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.JumpIf, res1 = mo.longName, str1 = trueLabel, str2 = falseLabel } );
+						ces.Pop(mo.actualParameterList.parameters.Length);
+						return;
+					}
+				}
+				CodeEmission.Emit.EmitBooleanToLogical(cs, ces, this, trueLabel, falseLabel);
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				if(this.method is MethodObject)
+				{
+					local MethodObject mo = this.method as MethodObject;
+					if(mo.isBranching)
+					{
+						CodeEmission.Emit.EmitLogicalToBoolean(cs, ces, this);
+						return;
+					}
+				}
+
+				foreach(TypeReference tref in this.method.returnTypes.typeReferences)
+					CodeEmission.Emit.PushShellSpace(ces, tref.refType);
+
+				if(this.delegateExpr != null)
+				{
+					Utility.Assert(this.delegateExpr.vtams[0].accessMode == AccessMode.L);
+					CodeEmission.Emit.EmitValues(cs, ces, this.delegateExpr, true);
+				}
+
+				CodeEmission.Emit.EmitValues(cs, ces, this.parameters, false);
+
+				CodeEmission.Emit.EmitMethodCall(ces, this.method as ICompilable, this.isExplicit, this.delegateExpr != null);
+				ces.Pop(this.method.actualParameterList.parameters.Length);
+
+				if(this.delegateExpr != null)
+					ces.Pop(1);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "method call";
+			}
+		}
+	}
+}

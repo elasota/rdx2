@@ -1,0 +1,152 @@
+/*
+ * Copyright (C) 2011-2013 Eric Lasota
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+using Core.RDX;
+
+namespace Core
+{
+	namespace Collections
+	{
+		public class ListBase
+		{
+			protected property largeuint _capacity;
+			protected property largeuint _length;
+			
+			// Returns "true" if a resize was required, then the new length, then the new capacity
+			protected function bool, largeuint, largeuint IncreaseSize(largeuint c)
+			{
+				local largeuint oldLength = _length;
+				local largeuint newLength = _length + c;
+				if(newLength < 0 || newLength < _length)
+					throw OutOfMemoryException.instance;
+				
+				local largeuint capacity = _capacity;
+				if(newLength <= capacity)
+					return false, newLength, capacity;
+
+				local largeuint newCapacity = capacity;
+				if(newCapacity == 0)
+					newCapacity = 8;
+
+				local largeuint prevNewCapacity = newCapacity;
+				while(newCapacity < newLength)
+				{
+					newCapacity = newCapacity * 2;
+					if(newCapacity < prevNewCapacity)
+						throw OutOfMemoryException.instance;
+					prevNewCapacity = newCapacity;
+				}
+				
+				return true, newLength, newCapacity;
+			}
+
+			public function void Clear()
+			{
+				_length = 0;
+				_capacity = 0;
+			}
+		}
+
+		public class List:<Ttype> extends ListBase
+		{
+			public struct listEnumerator
+			{
+				private property List:<Ttype> _list;
+				private property largeuint _idx;
+				
+				public function void Initialize(List:<Ttype> list)
+				{
+					_list = list;
+					_idx = 0;
+				}
+				
+				public function bool HasNext()
+				{
+					return _idx < _list.Length;
+				}
+
+				public function Ttype, largeuint GetNext()
+				{
+					local largeuint oldIdx = _idx;
+					_idx++;
+					return _list[oldIdx], oldIdx;
+				}
+			}
+
+			private property Ttype[] _elements;
+			
+			public function listEnumerator GetEnumerator()
+			{
+				return new listEnumerator(this);
+			}
+			
+			public intercept function largeuint Length()
+			{
+				return _length;
+			}
+
+			public function Ttype __index(largeuint idx)
+			{
+				if(idx < 0 || idx >= _length)
+					throw IndexOutOfBoundsException.instance;
+				return _elements[idx];
+			}
+			
+			public function void __setindex(Ttype v, largeuint idx)
+			{
+				if(idx < 0 || idx >= _length)
+					throw IndexOutOfBoundsException.instance;
+				_elements[idx] = v;
+			}
+
+			public function Ttype[] ToArray()
+			{
+				local Ttype[] dump = new Ttype[_length];
+				if(_elements != null)
+					_elements.BlockCopy(0, dump, 0, _length);
+				return dump;
+			}
+
+			public function void Add(Ttype v)
+			{
+				local largeuint prevLength = _length;
+				local bool shouldResize, largeuint newLength, largeuint newCapacity = IncreaseSize(1);
+
+				if(shouldResize)
+				{
+					local Ttype[] newElements = new Ttype[newCapacity];
+					if(_elements != null)
+						_elements.BlockCopy(0, newElements, 0, prevLength);
+					_elements = newElements;
+					_capacity = newCapacity;
+				}
+				_elements[prevLength] = v;
+				_length = newLength;
+			}
+
+			public function void Clear()
+			{
+				_elements = null;
+				(this as ListBase).explicit:Clear();
+			}
+		}
+	}
+}

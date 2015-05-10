@@ -1,0 +1,47 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CompilableValueExpression extends SimpleCObject implements IValueExpression, ICompilable
+		{
+			private property bool _isCompiled;
+
+			protected property VTAMCollection _vtams;
+			protected property string _longName;
+			protected property ASTNode _incriminateNode;
+
+			public intercept function VTAMCollection vtams()
+			{
+				return _vtams;
+			}
+
+			public function void FinishCompile()
+			{
+				_isCompiled = true;
+			}
+
+			public intercept function bool isCompiled()
+			{
+				return _isCompiled;
+			}
+
+			public intercept function string longName()
+			{
+				return _longName;
+			}
+
+			public intercept function ASTNode incriminateNode()
+			{
+				return _incriminateNode;
+			}
+
+			public abstract virtual intercept function string printableName();
+			public abstract virtual function bool Compile(CompilerState cs);
+		}
+	}
+}

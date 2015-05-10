@@ -1,0 +1,18 @@
+local projectInfo =
+{
+	outputFile = "rdxclasses/Apps/Common.rxt",
+
+	files =
+	{
+		"rdxsrc/Apps/common.rdx",
+	},
+
+	namespaces =
+	{
+		"Apps.Common",
+	},
+}
+
+importproject(projectInfo, "rdxsrc/Core.rdxproj")
+
+return projectInfo

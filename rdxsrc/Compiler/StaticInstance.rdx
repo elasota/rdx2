@@ -1,0 +1,89 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class StaticInstance extends CompilableValueExpression implements IVisibilityControlled, IEmittable
+		{
+			private property Visibility _visibility;
+			private property string _name;
+
+			public property StructuredTypeObject definedByType;
+			public property TypeReference typeOf;
+			public property TokenNode nameNode;
+			public property bool isConst;
+			public property bool isAnonymous;
+			public property bool hasInitializer;
+			public property Initializer initializer;
+
+			public function void Initialize(CompilerState cs, StructuredTypeObject definedByType, TypeReference typeOf, Visibility visibility, TokenNode name, bool isConst, ASTNode incriminate)
+			{
+				this.definedByType = definedByType;
+				this.typeOf = typeOf;
+				this._visibility = visibility;
+				this._name = (name != null) ? (null as string) : name.token.str;
+				this.nameNode = name;
+				this.isConst = isConst;
+				cs.uncompiled.Add(this);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				if(!this.typeOf.isCompiled || !this.definedByType.isCompiled)
+					return false;
+				local VType vType = this.typeOf.refType;
+				if(!vType.isCompiled || ((vType is StructuredTypeObject) && (vType as StructuredTypeObject).finalizer.isCompiled))
+					return false;
+				this._longName = this.definedByType.longName + "." + this._name;
+
+
+				local AccessMode accessMode;
+				if(vType.IsObjectReference)
+					accessMode = AccessMode.R;
+				else
+					accessMode = this.isConst ? AccessMode.CP : AccessMode.P;
+
+				if(vType is StructuredTypeObject && (vType as StructuredTypeObject).declType == "interface")
+					Utility.CError(this._incriminateNode, ErrorCode.InterfaceResource);
+
+				this._incriminateNode = null;
+				this._vtams = new VTAMCollection(new VTAM { accessMode = accessMode, vType = this.typeOf.refType });
+				FinishCompile();
+
+				cs.gst[this.longName] = this;
+
+				return true;
+			}
+
+			public intercept function string name()
+			{
+				return _name;
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Res, res1 = this.longName } );
+				ces.Push(1);
+			}
+
+			public final intercept function string printableName()
+			{
+				return "static instance";
+			}
+		}
+	}
+}

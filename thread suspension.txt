@@ -1,0 +1,9 @@
+Thread suspension has varying results based on the traceability of the thread's functions.
+
+All functions in a thread stack can have one of three tracing qualities:
+- Fully traced: Thread can be serialized and garbage collected
+- Reference traced: Thread can be garbage collected
+- Untraced: Prevents serialization and garbage collection
+
+Garbage collection can't scan untraced functions and will block if any threads contain one in its call stack.
+Threads can't be serialized unless every function in the stack is fully traced.

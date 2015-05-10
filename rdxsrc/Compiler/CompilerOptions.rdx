@@ -1,0 +1,18 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CompilerOptions
+		{
+			public const property bool emitDebugInfo;
+			public const property string cachePath;
+			public const property string const[] sourceFiles;
+			public const property string const[] includedNamespaces;
+			public const property largeuint templateLimit;
+		}
+	}
+}

@@ -1,0 +1,20 @@
+local projectInfo =
+{
+	outputFile = "rdxclasses/Core.rxt",
+
+	files =
+	{
+		"rdxsrc/Internal.rdx",
+		"rdxsrc/Programmability.rdx",
+		"rdxsrc/ZonePolicy.rdx",
+		"rdxsrc/HashTable.rdx",
+		"rdxsrc/List.rdx",
+	},
+
+	namespaces =
+	{
+		"Core",
+	},
+}
+
+return projectInfo

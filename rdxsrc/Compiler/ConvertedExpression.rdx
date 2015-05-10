@@ -1,0 +1,31 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class ConvertedExpression extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression expression;
+
+			public function void Initialize(IValueExpression expr, const VTAMCollection vtams)
+			{
+				this.expression = expr;
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				CodeEmission.Emit.EmitConvertedExpression(cs, ces, this.expression, this._vtams);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "converted expression";
+			}
+		}
+	}
+}

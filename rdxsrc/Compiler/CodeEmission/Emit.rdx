@@ -1,0 +1,1236 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		namespace CodeEmission
+		{
+			public class Emit
+			{
+				public static function void EmitMethodCall(CodeEmissionState ces, ICompilable m, bool isExplicit, bool isDelegate)
+				{
+					if(isDelegate)
+						ces.AddInstruction(new PInstr { op = POp.CallDelegate, res1 = m.longName } );
+					else if(m is BoundDelegateMarshal)
+						ces.AddInstruction(new PInstr { op = POp.CallVirtual, res1 = (m as BoundDelegateMarshal).invokeName } );
+					else
+					{
+						local MethodObject method = m as MethodObject;
+
+						if(method.isVirtual && !isExplicit)
+							ces.AddInstruction(new PInstr { op = POp.CallVirtual, res1 = m.longName } );
+						else
+							ces.AddInstruction(new PInstr { op = POp.Call, res1 = m.longName } );
+					}
+				}
+
+				public static function void PushShellSpace(CodeEmissionState ces, VType vType)
+				{
+					if(vType is StructuredTypeObject && vType.IsRefStruct)
+					{
+						// This requires a temporary
+						local LocalVariable temp = ces.AddTemporary(vType);
+						ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+						ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+						ces.Push(1, temp);
+					}
+					else
+					{
+						ces.AddInstruction(new PInstr { op = POp.PushEmpty, res1 = vType.longName } );
+						ces.Push(1);
+					}
+				}
+
+
+				// Emits expression, auto-converts if necessary
+				// This can only actually convert one value, the one before the first value being dismantled, and it may not convert that either
+				
+				// Because R-values can contain multiple values, they may be partially "dismantled" to convert arguments:
+				// Conversion types that can be done in-place (polymorphic cast, P-to-R) dismantle everything after them
+				// Conversion types that require a previous stack entry (coerce) dismantle everything after them and will dismantle themselves if not first
+				// R-to-P dismantles itself and everything after
+				// Direct casts do not dismantle
+				public static function void EmitConvertedExpression(CompilerState cs, CodeEmissionState ces, IValueExpression expr, const VTAMCollection targetVTAMs)
+				{
+					local enum ConvertOperation
+					{
+						NoConversion,
+
+						PinL,
+						PinLV,
+						LoadL,
+						PtoR,
+						PtoV,
+						BindStaticDelegate,
+						PolymorphicCast,
+						Coerce,
+					};
+
+					Utility.Assert(expr.vtams.Length == targetVTAMs.Length);
+					Utility.Assert(expr.vtams.Length != 0);
+
+					local largeuint firstDismantle;
+					local bool hasDismantle;
+					local ConvertOperation convertOperation;
+				
+					foreach(VTAM svtam, largeuint idx in expr.vtams)
+					{
+						local VTAM tvtam = targetVTAMs[idx];
+
+						local MatchLevel matchability = Utility.CastMatchability(svtam.vType, tvtam.vType, true);
+
+						switch(matchability)
+						{
+							case(MatchLevel.Exact, MatchLevel.Direct):
+							{
+								if(svtam.accessMode == tvtam.accessMode || tvtam.accessMode == AccessMode.Any)
+								{
+									// Nothing to do
+								}
+								else if(svtam.AMIsPointer && (tvtam.accessMode == AccessMode.CP || tvtam.accessMode == AccessMode.AnyP))
+								{
+									// Nothing to do
+								}
+								else if(svtam.accessMode == AccessMode.L && tvtam.AMIsPointer)
+								{
+									convertOperation = ConvertOperation.PinL;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else if(svtam.accessMode == AccessMode.L && tvtam.accessMode == AccessMode.R)
+								{
+									convertOperation = ConvertOperation.LoadL;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else if(svtam.AMIsPointer && tvtam.accessMode == AccessMode.R)
+								{
+									convertOperation = ConvertOperation.PtoR;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else if(svtam.accessMode == AccessMode.R && tvtam.AMIsPointer)
+								{
+									firstDismantle = idx;	// RtoP is a dismantle followed by a secondary PinL
+									hasDismantle = true;
+									break;
+								}
+								else
+									// NOTE: Errors are never caught at this point, filter them out in ConvertExpression!
+									Utility.Assert(false, "Access modes unconvertible");
+							}
+							case(MatchLevel.Lossless, MatchLevel.Lossy):
+							{
+								if(svtam.vType is StaticDelegateTypeObject && tvtam.vType is BoundDelegateTypeObject)
+								{
+									convertOperation = ConvertOperation.BindStaticDelegate;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else
+								{
+									Utility.Assert(svtam.vType is StructuredTypeObject);
+									if(idx == 0)
+									{
+										if(matchability == MatchLevel.Lossless && (tvtam.vType is StructuredTypeObject) &&
+											Utility.TypeImplementsInterface(svtam.vType as StructuredTypeObject, tvtam.vType as StructuredTypeObject))
+											convertOperation = ConvertOperation.PolymorphicCast;
+										else
+											convertOperation = ConvertOperation.Coerce;
+										firstDismantle = idx + 1;
+										hasDismantle = true;
+										break;
+									}
+									else
+									{
+										firstDismantle = idx;	// Can only coerce the first parameter, anything else gets dismantled
+										hasDismantle = true;
+									}
+								}
+								break;
+							}
+							case(MatchLevel.Polymorphic):
+							{
+								convertOperation = ConvertOperation.PolymorphicCast;
+								firstDismantle = idx + 1;
+								hasDismantle = true;
+								break;
+							}
+							case(MatchLevel.Varying):
+							{
+								Utility.Assert(tvtam.accessMode == AccessMode.V);
+								if(svtam.accessMode == AccessMode.L)
+								{
+									convertOperation = ConvertOperation.PinLV;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else if(svtam.accessMode == AccessMode.P)
+								{
+									convertOperation = ConvertOperation.PtoV;
+									firstDismantle = idx + 1;
+									hasDismantle = true;
+									break;
+								}
+								else if(svtam.accessMode == AccessMode.R)
+								{
+									firstDismantle = idx;
+									hasDismantle = true;
+									break;
+								}
+								else
+									Utility.Assert(false);
+							}
+							case(default):
+							{
+								Utility.Assert(false);
+							}
+						}
+					}
+
+					local largeuint cidx;
+					if(hasDismantle)
+					{
+						cidx = firstDismantle - 1;
+					}
+
+					// Leave space for coerce
+					if(convertOperation == ConvertOperation.Coerce)
+						PushShellSpace(ces, targetVTAMs[0].vType);
+				
+					// Emit the actual values
+					EmitValues(cs, ces, expr, true);
+
+					if(convertOperation == ConvertOperation.PinL)
+					{
+						ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+						return;
+					}
+					else if(convertOperation == ConvertOperation.LoadL)
+					{
+						ces.AddInstruction(new PInstr { op = POp.Load } );
+
+						// Cycle the opstack to remove the reference to this local
+						ces.Pop();
+						ces.Push(1);
+
+						return;
+					}
+					else if(convertOperation == ConvertOperation.PinLV)
+					{
+						ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+						ces.AddInstruction(new PInstr { op = POp.ToVarying } );
+						return;
+					}
+
+					local LocalVariable[] dismantledTemporaries;
+				
+					// Dismantle everything else
+					if(hasDismantle)
+					{
+						dismantledTemporaries = new LocalVariable[expr.vtams.Length];
+
+						local largeuint dismantlingIndex = expr.vtams.Length - 1;
+
+						while(dismantlingIndex >= firstDismantle)
+						{
+							local LocalVariable temp = ces.AddTemporary(expr.vtams[dismantlingIndex].vType);
+							ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+							if(expr.vtams[dismantlingIndex].accessMode == AccessMode.R)
+							{
+								ces.AddInstruction(new PInstr { op = POp.Move } );
+								ces.Pop();
+							}
+							else if(expr.vtams[dismantlingIndex].accessMode == AccessMode.P)
+							{
+								ces.AddInstruction(new PInstr { op = POp.Move } );
+								ces.Pop();
+							}
+							else
+								Utility.Assert(false, "COMPILER ERROR: Dismantled a localref, localrefs can only be singular expressions");
+
+							dismantledTemporaries[dismantlingIndex] = temp;
+							dismantlingIndex--;
+						}
+					}
+
+					switch(convertOperation)
+					{
+						case(ConvertOperation.Coerce):
+						{
+							local VTAM fromVTAM = expr.vtams[cidx];
+							local VTAM toVTAM = targetVTAMs[cidx];
+
+							local MethodObject coerceMethod = Utility.FindCoerce(fromVTAM.vType, toVTAM.vType, true);
+							if(coerceMethod == null)
+							{
+								coerceMethod = Utility.FindCoerce(fromVTAM.vType, toVTAM.vType, false);
+								Utility.Assert(coerceMethod != null);
+							}
+
+							local VType rt = coerceMethod.actualParameterList.parameters[0].type.refType;
+
+							if(rt.IsRefStruct)
+							{
+								// To P
+								if(fromVTAM.accessMode == AccessMode.L)
+									ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+								else if(fromVTAM.accessMode == AccessMode.R)
+								{
+									local LocalVariable temp = ces.AddTemporary(rt);
+									ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+									ces.AddInstruction(new PInstr { op = POp.Move } );
+									ces.Pop();
+									ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+									ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+									ces.Push(1, temp);
+								}
+							}
+							else
+							{
+								// To R
+								if(fromVTAM.accessMode == AccessMode.L || fromVTAM.AMIsPointer)
+								{
+									ces.AddInstruction(new PInstr { op = POp.Load } );
+
+									// Cycle the opstack to remove the reference to this local
+									ces.Pop();
+									ces.Push(1);
+								}
+								else
+									Utility.Assert(fromVTAM.accessMode == AccessMode.R);
+							}
+
+							EmitMethodCall(ces, coerceMethod, false, false);
+							ces.Pop();
+
+							if(toVTAM.vType.IsRefStruct)
+								Utility.Assert(toVTAM.AMIsPointer || toVTAM.accessMode == AccessMode.Any);
+							else
+							{
+								// Value struct on the stack
+								if(toVTAM.AMIsPointer)
+								{
+									local LocalVariable temp = ces.AddTemporary(toVTAM.vType);
+									ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+									ces.AddInstruction(new PInstr { op = POp.Move } );
+									ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = temp.stackIndex } );
+									ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+									ces.Pop();
+									ces.Push(1, temp);
+								}
+								else
+									Utility.Assert(toVTAM.accessMode == AccessMode.R || toVTAM.accessMode == AccessMode.Any);
+							}
+						}
+						case(ConvertOperation.PtoR):
+						{
+							ces.AddInstruction(new PInstr { op = POp.Load } );
+
+							// Cycle the opstack to remove the reference to this local
+							ces.Pop();
+							ces.Push(1);
+						}
+						case(ConvertOperation.PtoV):
+						{
+							ces.AddInstruction(new PInstr { op = POp.ToVarying } );
+						}
+						case(ConvertOperation.PolymorphicCast):
+						{
+							local AccessMode exprAM = expr.vtams[cidx].accessMode;
+
+							if(exprAM == AccessMode.P || exprAM == AccessMode.CP || exprAM == AccessMode.L)
+							{
+								// Load from pointer or local if needed
+								ces.AddInstruction(new PInstr { op = POp.Load } );
+
+								// Cycle the opstack to remove the reference to this local
+								ces.Pop();
+								ces.Push(1);
+							}
+							else
+								Utility.Assert(exprAM == AccessMode.R);
+
+							ces.AddInstruction(new PInstr { op = POp.Cast, res1 = targetVTAMs[cidx].vType.longName } );
+
+							local AccessMode tam = targetVTAMs[cidx].accessMode;
+							Utility.Assert(tam == AccessMode.R || tam == AccessMode.Any, "Polymorphic cast requested to a non-R-value");
+						}
+						case(ConvertOperation.BindStaticDelegate):
+						{
+							local VTAM fromVTAM = expr.vtams[cidx];
+							local VTAM toVTAM = targetVTAMs[cidx];
+
+							if(fromVTAM.accessMode == AccessMode.L || fromVTAM.AMIsPointer)
+							{
+								ces.AddInstruction(new PInstr { op = POp.Load } );
+
+								// Cycle the opstack to remove the reference to this local
+								ces.Pop();
+								ces.Push(1);
+							}
+							else
+								Utility.Assert(fromVTAM.accessMode == AccessMode.R);
+
+							local LocalVariable bdTemp = ces.AddTemporary(toVTAM.vType);
+							local BoundDelegateMarshal glue = cs.MarshalForBoundDelegate(toVTAM.vType as BoundDelegateTypeObject, fromVTAM.vType as StaticDelegateTypeObject);
+							ces.AddInstruction(new PInstr { op = POp.NewInstanceSet, int1 = bdTemp.stackIndex, intVar = new long[] { 0 }, res1 = glue.longName } );
+							ces.Pop();
+							ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = bdTemp.stackIndex } );
+							ces.Push(1, bdTemp);
+
+							if(toVTAM.AMIsPointer)
+								ces.AddInstruction(new PInstr { op = POp.PinLocal } );
+							else
+								Utility.Assert(toVTAM.accessMode == AccessMode.R || toVTAM.accessMode == AccessMode.Any);
+						}
+						case(default):
+						{
+							Utility.Assert(false);
+						}
+					}
+
+					if(hasDismantle)
+					{
+						local largeuint numVTAMs = expr.vtams.Length;
+						for(local largeuint i=firstDismantle;i<numVTAMs;i++)
+						{
+							// Re-emit dismantled values
+							EmitConvertedExpression(cs, ces, dismantledTemporaries[i], new VTAMCollection(targetVTAMs[i]));
+						}
+					}
+				}
+
+				
+				public static function void EmitBooleanToLogical(CompilerState cs, CodeEmissionState ces, IValueExpression expr, notnull string trueLabel, notnull string falseLabel)
+				{
+					local VType boolType = cs.gst["Core.bool"] as VType;
+
+					if(expr is Constant && expr.vtams[0].vType == boolType)
+					{
+						// Optimize out static branches
+						if((expr as Constant).value == "true")
+							ces.AddInstruction( new PInstr { op = POp.Jump, str1 = trueLabel } );
+						else
+							ces.AddInstruction( new PInstr { op = POp.Jump, str1 = falseLabel } );
+					}
+
+					EmitValues(cs, ces, expr, false);
+					ces.AddInstruction( new PInstr { op = POp.JumpIfTrue, str1 = trueLabel, str2 = falseLabel } );
+					ces.Pop();
+				}
+
+				public static function void EmitLogical(notnull CompilerState cs, notnull CodeEmissionState ces, notnull IValueExpression expr, notnull string trueLabel, notnull string falseLabel)
+				{
+					if(expr is IEmittableLogical)
+						(expr as IEmittableLogical).EmitLogical(cs, ces, trueLabel, falseLabel);
+					else
+						EmitBooleanToLogical(cs, ces, expr, trueLabel, falseLabel);
+				}
+
+				public static function void EmitValues(CompilerState cs, CodeEmissionState ces, IValueExpression expr, bool allowLocals)
+				{
+					if(!allowLocals)
+						foreach(VTAM vtam in expr.vtams)
+							Utility.Assert(vtam.accessMode == AccessMode.V || vtam.accessMode == AccessMode.P || vtam.accessMode == AccessMode.CP || vtam.accessMode == AccessMode.R);
+
+					if(expr is IEmittableLogical)
+						EmitLogicalToBoolean(cs, ces, expr);
+					else if(expr is IEmittable)
+						(expr as IEmittable).EmitValues(cs, ces, allowLocals);
+					else
+					{
+						Utility.Assert(false, "Unimplemented emission");
+					}
+				}
+
+				public static function void EmitLogicalToBoolean(CompilerState cs, CodeEmissionState ces, IValueExpression expr)
+				{
+					ces.AddInstruction( new PInstr { op = POp.PushEmpty, res1 = "Core.bool" } );
+					ces.Push(1);
+
+					ces.AddInstruction( new PInstr { op = POp.StartBarrier, int1 = 1 } );
+
+					local string lbl = ces.CreateLabel();
+					local string trueLabel = lbl + "_true";
+					local string falseLabel = lbl + "_false";
+
+					EmitLogical(cs, ces, expr, trueLabel, falseLabel);
+
+					ces.AddInstruction( new PInstr { op = POp.Label, str1 = trueLabel } );
+					ces.AddConstantInstruction("Core.bool", "true", Constant.Signal.Value);
+					ces.Push(1);
+					ces.AddInstruction( new PInstr { op = POp.Return, int1 = 1 } );
+					ces.Pop();
+					ces.AddInstruction( new PInstr { op = POp.Label, str1 = falseLabel } );
+					ces.AddConstantInstruction("Core.bool", "false", Constant.Signal.Value);
+					ces.Push(1);
+					ces.AddInstruction( new PInstr { op = POp.Return, int1 = 1 } );
+					ces.Pop();
+					ces.AddInstruction( new PInstr { op = POp.EndBarrier } );
+				}
+
+				public static function void EmitOperateAndAssign(notnull CompilerState cs, notnull CodeEmissionState ces, notnull ExpressionNode destNode, notnull ExpressionNode right, notnull Scope scope, notnull ModifyingOperationNode node)
+				{
+					// Index: Cache operands[0] and [1]
+					// Indirect: Cache operand[0]
+					// Everything else: No cache
+
+					if(destNode is IndexNode)
+					{
+						local IValueExpression indexSource = cs.CompileExpression(destNode.operands[0], scope, true).ToValues(node);
+						local IValueExpression indexIndexes = cs.CompileExpressionList(destNode.operands[1] as ExpressionListNode, scope, true).ToValues(node);
+
+						indexSource = CompilerState.AdjustValueCount(indexSource, node, 1);
+
+						// Make sure the recycled values are stored, locals can't be dismantled from multi-value expressions
+						do
+						{
+							local VTAM[] indexVTAMs = new VTAM[indexIndexes.vtams.Length];
+
+							foreach(VTAM vt, largeuint idx in indexIndexes.vtams)
+							{
+								local AccessMode am;
+								if(vt.vType.IsRefStruct)
+									am = AccessMode.CP;
+								else
+									am = AccessMode.R;
+								indexVTAMs[idx] = new VTAM { vType = vt.vType, accessMode = am };
+							}
+
+							indexIndexes = CompilerState.ConvertExpression(node, indexIndexes, new VTAMCollection(indexVTAMs), false, false);
+						};
+
+						local RecycledValues sourceRecycle = new RecycledValues(indexSource.vtams, ces.OpstackIndex);
+
+						EmitValues(cs, ces, indexSource, true);
+
+						local RecycledValues indexRecycle = new RecycledValues(indexIndexes.vtams, ces.OpstackIndex);
+
+						EmitValues(cs, ces, indexIndexes, true);
+
+						local IndexNode virtualNode = new IndexNode(node.codeLocation);
+						virtualNode.operands = new ExpressionNode[]
+						{
+							new PrecompiledNode(node.codeLocation, sourceRecycle),
+							new PrecompiledNode(node.codeLocation, Utility.SingleExpressionToList(indexRecycle)),
+						};
+
+						local PrecompiledNode loadExpression = new PrecompiledNode(node.codeLocation, cs.CompileIndexExpression(virtualNode, scope, true) as ICObject);
+
+						local BinaryOperatorNode operationNode = new BinaryOperatorNode(node.codeLocation);
+						operationNode.operator = node.operator;
+						operationNode.operands = new ExpressionNode[]
+						{
+							loadExpression,
+							right
+						};
+
+						local IValueExpression compiledResult = cs.CompileExpression(operationNode, scope, true).ToValues(node);
+
+						local IValueExpression saveExpression = cs.CompileIndexExpression(virtualNode, scope, false);
+
+						EmitAssign(cs, ces, Utility.SingleExpressionToList(saveExpression), Utility.SingleExpressionToList(compiledResult), scope, node);
+
+						local largeuint pops = indexSource.vtams.Length + indexIndexes.vtams.Length;
+						for(local largeuint i=0;i<pops;i++)
+						{
+							ces.AddInstruction(new PInstr { op = POp.Pop } );
+							ces.Pop(1);
+						}
+					}
+					else if(destNode is IndirectNode)
+					{
+						local IValueExpression indirSource = cs.CompileExpression(destNode.operands[0], scope, true).ToValues(node);
+
+						// TODO: If indirSource has "R" access mode, refuse this
+						local RecycledValues sourceRecycle = new RecycledValues(indirSource.vtams, ces.OpstackIndex);
+
+						EmitValues(cs, ces, indirSource, true);
+
+						local IndirectNode virtualNode = new IndirectNode(node.codeLocation);
+						virtualNode.operands = new ExpressionNode[]
+						{
+							new PrecompiledNode(node.codeLocation, sourceRecycle),
+							destNode.operands[1]
+						};
+
+						local ICObject loadExpression = cs.CompileExpression(virtualNode, scope, true);
+
+						local BinaryOperatorNode operationNode = new BinaryOperatorNode(node.codeLocation);
+						operationNode.operator = node.operator;
+						operationNode.operands = new ExpressionNode[]
+						{
+							new PrecompiledNode(node.codeLocation, loadExpression),
+							right
+						};
+
+						local IValueExpression compiledResult = cs.CompileExpression(operationNode, scope, true).ToValues(node);
+						local IValueExpression saveExpression = cs.CompileExpression(virtualNode, scope, false).ToValues(node);
+
+						EmitAssign(cs, ces, Utility.SingleExpressionToList(saveExpression), Utility.SingleExpressionToList(compiledResult), scope, node);
+
+						local largeuint pops = indirSource.vtams.Length;
+						for(local largeuint i=0;i<pops;i++)
+						{
+							ces.AddInstruction(new PInstr { op = POp.Pop } );
+							ces.Pop(1);
+						}
+					}
+					else
+					{
+						local ICObject loadTarget = cs.CompileExpression(destNode, scope, true);
+						local ICObject saveTarget = cs.CompileExpression(destNode, scope, false);
+
+						local BinaryOperatorNode operationNode = new BinaryOperatorNode(node.codeLocation);
+						operationNode.operator = node.operator;
+						operationNode.operands = new ExpressionNode[]
+						{
+							new PrecompiledNode(node.codeLocation, loadTarget),
+							right
+						};
+
+						local IValueExpression compiledResult = cs.CompileExpression(operationNode, scope, true).ToValues(node);
+
+						EmitAssign(cs, ces, Utility.SingleExpressionToList(saveTarget.ToValues(node)), Utility.SingleExpressionToList(compiledResult), scope, node);
+					}
+				}
+
+				public static function void EmitAssign(CompilerState cs, CodeEmissionState ces, MultipleValues dest, IValueExpression src, Scope scope, ASTNode incriminate)
+				{
+					Utility.Assert(src is MultipleValues || src is ValueCountAdjuster);
+
+					local MultipleValues leftMV = dest;
+
+					if(leftMV.vtams.Length == 0)
+						Utility.CError(incriminate, ErrorCode.AssignLeftSideNotVariable);
+
+					if(src.vtams.Length != leftMV.vtams.Length)
+						Utility.CError(incriminate, ErrorCode.AssignTooFewValues, leftMV.vtams.Length, src.vtams.Length);
+
+					local VTAM[] targetVTAMs = new VTAM[leftMV.expressions.Length];
+					local Dictionary:<largeuint, MethodCall> cachedIntercepts = new Dictionary:<largeuint, MethodCall>();
+
+					foreach(IValueExpression leftExpr, largeuint idx in leftMV.expressions)
+					{
+						if(idx >= src.vtams.Length)
+							Utility.CError(incriminate, ErrorCode.AssignRightSideTooFewValues);
+
+						local VTAM leftVTAM = leftExpr.vtams[0];
+
+						switch(leftVTAM.accessMode)
+						{
+							case(AccessMode.R):
+							{
+								if(leftVTAM.vType.longName == "Core.nullreference")
+									targetVTAMs[idx] = new VTAM { vType = leftVTAM.vType, accessMode = AccessMode.Any };
+								else
+									Utility.CError(incriminate, ErrorCode.AssignLeftSideNotVariable);
+							}
+							case(AccessMode.L, AccessMode.P):
+							{
+								targetVTAMs[idx] = new VTAM { vType = leftVTAM.vType, accessMode = AccessMode.Any };
+							}
+							case(AccessMode.I):
+							{
+								local MultipleValues placeholderParameters = Utility.SingleExpressionToList(new PlaceholderRValue(src.vtams[idx].vType));
+								local MethodCall icpt = cs.MatchMethodCall(leftExpr as ICObject, placeholderParameters, incriminate, false, null) as MethodCall;
+
+								targetVTAMs[idx] = icpt.parameters.vtams[0];
+
+								// Convert target ref to the appropriate access mode
+								local VTAM paramVTAM = icpt.parameters.vtams[1];
+
+								icpt.convertedParameters = CompilerState.ConvertExpression(incriminate, (leftExpr as DischargedIntercept).objectMethod.object, new VTAMCollection(paramVTAM), false, false);
+
+								cachedIntercepts[idx] = icpt;
+							}
+							case(AccessMode.A):
+							{
+								local MVTemplate placeholderParameters = new MVTemplate();
+								local SetIndexCall leftSIC = leftExpr as SetIndexCall;
+
+								placeholderParameters.Append(new PlaceholderRValue(src.vtams[idx].vType));
+								foreach(IValueExpression expr in leftSIC.indexes.expressions)
+									placeholderParameters.Append(expr);
+
+								local MethodCall icpt = cs.MatchMethodCall(leftSIC.methodCall, placeholderParameters.ToMV(), incriminate, false, null) as MethodCall;
+
+								// Convert the indexes to the appropriate type
+								do
+								{
+									local VTAMCollection interceptParamVTAMs = icpt.parameters.vtams;
+									local largeuint span = interceptParamVTAMs.Length;
+									local VTAM[] indexTargetVTAMs = new VTAM[span - 2];
+
+									for(local largeuint tidx=2;tidx<span;tidx++)
+										indexTargetVTAMs[tidx-2] = interceptParamVTAMs[tidx];
+									icpt.convertedParameters = CompilerState.ConvertExpression(incriminate, leftSIC.indexes, new VTAMCollection(indexTargetVTAMs));
+								};
+
+								targetVTAMs[idx] = icpt.parameters.vtams[0];
+
+								cachedIntercepts[idx] = icpt;
+							}
+							case(AccessMode.CP):
+							{
+								Utility.CError(incriminate, ErrorCode.AssignToConstant);
+							}
+							case(default):
+							{
+								Utility.Assert(false, "Bad left side access mode");
+							}
+						}
+					}
+
+					local IValueExpression cRight = CompilerState.ConvertExpression(incriminate, src, new VTAMCollection(targetVTAMs), false, true);
+
+					CodeEmission.Emit.EmitValues(cs, ces, cRight, true);
+
+					local largeuint numExpr = leftMV.expressions.Length;
+					for(local largeuint iidx = 0;iidx<numExpr;iidx++)
+					{
+						local largeuint idx = numExpr - iidx - 1;
+
+						local IValueExpression leftExpr = leftMV.expressions[idx];
+						local VTAM leftVTAM = leftExpr.vtams[0];
+						local AccessMode rightAccessMode = cRight.vtams[idx].accessMode;
+
+						switch(leftVTAM.accessMode)
+						{
+							case(AccessMode.L):
+							{
+								EmitValues(cs, ces, leftExpr, true);
+
+								ces.AddInstruction(new PInstr { op = POp.Move } );
+								ces.Pop(2);
+							}
+							case(AccessMode.P):
+							{
+								EmitValues(cs, ces, leftExpr, true);
+
+								ces.AddInstruction(new PInstr { op = POp.Move } );
+								ces.Pop(2);
+							}
+							case(AccessMode.A):
+							{
+								EmitValues(cs, ces, (leftExpr as SetIndexCall).methodCall.object, true);
+
+								local MethodCall icpt = cachedIntercepts[idx];
+
+								icpt.parameters = icpt.convertedParameters;		// leftExpr.indexes
+
+								EmitValues(cs, ces, icpt, false);
+							}
+							case(AccessMode.I):
+							{
+								// FIXME: Using convertedParameters is a bit of a hack?
+								local MethodCall icpt = cachedIntercepts[idx];
+								EmitValues(cs, ces, icpt.convertedParameters, true);
+
+								icpt.parameters = Utility.EmptyExpressionList();
+
+								EmitValues(cs, ces, icpt, false);
+							}
+							case(AccessMode.R):
+							{
+								ces.AddInstruction(new PInstr { op = POp.Pop } );
+								ces.Pop(1);
+							}
+							case(default):
+							{
+								Utility.Assert(false);
+							}
+						}
+					}
+				}
+				
+				
+				public static function MultipleValues EmitDeclsToLocals(notnull CompilerState cs, notnull CodeEmissionState ces, notnull DeclarationListNode declsNode, notnull CodeBlock block)
+				{
+					local largeuint numDecls = declsNode.declarations.Length;
+					local IValueExpression[] declarations = new IValueExpression[numDecls];
+					local VTAM[] declVTAMs = new VTAM[numDecls];
+
+					foreach(TypedDeclaration decl, largeuint idx in declsNode.declarations)
+					{
+						local TypeReference tr = new TypeReference(cs, decl.type, block, false);
+						tr.Compile(cs);
+						Utility.Assert(tr.isCompiled);
+
+						local VType t = tr.refType;
+
+						if(t.longName == CompilerConstants.varyingType())
+							Utility.CError(decl.name, ErrorCode.VaryingLocal);
+
+						local LocalVariable l = new LocalVariable(Utility.BlockMethod(block), t, false, false);
+
+						ces.AddInstruction(new PInstr { op = POp.AllocLocal, res1 = l.vtams[0].vType.longName, str1 = decl.name.token.str } );
+
+						block.CreateLocal(ces, l, decl.name, true);
+						declarations[idx] = l;
+						declVTAMs[idx] = new VTAM { vType = l.vtams[0].vType, accessMode = AccessMode.L };
+					}
+
+					ces.Discharge();	// Don't allow compiler temps to be created before these
+
+					return new MultipleValues(declarations, new VTAMCollection(declVTAMs));
+				}
+
+				public static function void EmitLocalDecl(notnull CompilerState cs, notnull CodeEmissionState ces, notnull LocalDeclNode expr, notnull CodeBlock block)
+				{
+					local MultipleValues mvNode = EmitDeclsToLocals(cs, ces, expr.declarations, block);
+
+					if(expr.initializers != null)
+					{
+						local IValueExpression initializers = cs.CompileExpressionList(expr.initializers, block, true);
+						initializers = CompilerState.AdjustValueCount(initializers, expr.initializers, mvNode.vtams.Length);
+						EmitAssign(cs, ces, mvNode, initializers, block, expr);
+					}
+
+					Utility.UnhideLocals(mvNode);
+				}
+
+				// Emits a "using" protection block for a single portion of an initializer list
+				// If no initializers are available, emits the code block instead
+				public static function void EmitUsingDeclPortion(CompilerState cs, CodeEmissionState ces,
+					UsingDeclNode baseExpr, MultipleValues localMV, ExpressionNode const[] initExprs, CodeBlock block,
+					CodeBlock outerBlock, largeuint localStart, largeuint exprStart)
+				{
+					if(localStart >= localMV.vtams.Length)
+					{
+						if(exprStart >= initExprs.Length)
+							Utility.CError(baseExpr, ErrorCode.AssignTooFewValues, localMV.vtams.Length, initExprs.Length);
+
+						// Ran out of initializers, nothing left to do but emit the actual code
+						Utility.UnhideLocals(localMV);
+
+						local CodeBlock cBlock = new CodeBlock(null, block, block.LocalIndex);
+						cs.CompileCodeBlock(ces, block, baseExpr.block, false);
+						return;
+					}
+
+					local IValueExpression exprNode = cs.CompileExpression(initExprs[exprStart], outerBlock, true).ToValues(baseExpr);
+
+					local MultipleValues exprSubMV = Utility.FlattenMV(new MultipleValues(new IValueExpression const[] { exprNode }, exprNode.vtams));
+
+					local largeuint numValues = exprNode.vtams.Length;
+					local IValueExpression[] localSubExprs = new IValueExpression[numValues];
+					local VTAM[] localSubVTAMs = new VTAM[numValues];
+
+					for(local largeuint i=0;i<numValues;i++)
+					{
+						local largeuint subLocal = i + localStart;
+						if(subLocal >= localMV.expressions.Length)
+							Utility.CError(baseExpr, ErrorCode.AssignRightSideTooFewValues);
+						local LocalVariable l = localMV.expressions[subLocal] as LocalVariable;
+
+						localSubExprs[i] = l;
+						localSubVTAMs[i] = localMV.vtams[subLocal];
+					}
+
+					// Assign to these locals
+					EmitAssign(cs, ces, new MultipleValues(localSubExprs, new VTAMCollection(localSubVTAMs)), exprSubMV, block, baseExpr);
+					ces.Discharge();
+
+					local GuaranteeOuterBlock guaranteeOuterBlock = new GuaranteeOuterBlock(ces, null, block, block.LocalIndex);
+					local GuaranteeInnerBlock guaranteeInnerBlock = guaranteeOuterBlock.StartGuaranteeInnerBlock(cs, ces);
+
+					// Emit more assignments or the code
+					EmitUsingDeclPortion(cs, ces, baseExpr, localMV, initExprs, guaranteeInnerBlock, outerBlock, localStart + numValues, exprStart + 1);
+
+					guaranteeInnerBlock.Close(ces);
+
+					local CodeBlock disposeBlock = new CodeBlock(null, guaranteeOuterBlock, guaranteeOuterBlock.LocalIndex);
+
+					do
+					{
+						local ExpressionListNode emptyParameterListNode = new ExpressionListNode(baseExpr.codeLocation);
+						emptyParameterListNode.expressions = new ExpressionNode[0];
+
+						local TokenNode disposeNode = new TokenNode(baseExpr.codeLocation);
+						disposeNode.token = new Token { str = "Dispose", tokenType = TokenType.Name, codeLocation = baseExpr.codeLocation };
+
+						local ExpressionNode[] disposeLeftExprNodes = new ExpressionNode[1];
+
+						local IndirectNode disposeIndirectNode = new IndirectNode(baseExpr.codeLocation);
+						disposeIndirectNode.memberName = disposeNode;
+						disposeIndirectNode.operands = disposeLeftExprNodes;
+
+						local InvokeNode disposeInvoke = new InvokeNode(baseExpr.codeLocation);
+						disposeInvoke.operands = new ExpressionNode[] { disposeIndirectNode, emptyParameterListNode };
+
+						for(local largeuint i=0;i<numValues;i++)
+						{
+							// Dispose of values in reverse order
+							disposeLeftExprNodes[0] = new PrecompiledNode(baseExpr.codeLocation, localMV.expressions[localStart + numValues - i - 1] as ICObject);
+
+							local IValueExpression disposeCompiled = cs.CompileExpression(disposeInvoke, guaranteeOuterBlock, true).ToValues(baseExpr);
+
+							EmitValues(cs, ces, CompilerState.AdjustValueCount(disposeCompiled, baseExpr, 0), false);
+							ces.Discharge();
+						}
+					};
+
+					guaranteeOuterBlock.Close(ces);
+				}
+
+				public static function void EmitUsingDecl(CompilerState cs, CodeEmissionState ces, UsingDeclNode expr, CodeBlock block)
+				{
+					local CodeBlock rootBlock = new CodeBlock(null, block, block.LocalIndex);
+
+					// No we're not emitting any actual expression-based code (only local decls), push a code location
+					ces.PushCodeLocation(expr.codeLocation);
+
+					// Initializers can potentially fail, but disposal should only occur if the local was successfully assigned to
+					local MultipleValues mvNode = EmitDeclsToLocals(cs, ces, expr.declarations, rootBlock);
+
+					EmitUsingDeclPortion(cs, ces, expr, mvNode, expr.initializers.expressions, rootBlock, block, 0, 0);
+
+					// Close the root block
+					ces.CloseCodeBlock(rootBlock);
+				}
+
+				public static function void EmitReturn(CompilerState cs, CodeEmissionState ces, ReturnNode stmt, CodeBlock block)
+				{
+					local MethodObject m = Utility.BlockMethod(block);
+					local largeuint numRequiredReturnValues = m.returnTypes.typeReferences.Length;
+
+					if(stmt.returnValues != null)
+					{
+						local IValueExpression returnExpr = cs.CompileExpressionList(stmt.returnValues, block, true);
+						returnExpr = CompilerState.AdjustValueCount(returnExpr, stmt, numRequiredReturnValues);
+
+						local VTAM[] returnVTAMs = new VTAM[numRequiredReturnValues];
+						foreach(TypeReference ref, largeuint idx in m.returnTypes.typeReferences)
+							returnVTAMs[idx] = new VTAM { vType = ref.refType, accessMode = AccessMode.Any };
+
+						local IValueExpression convertedReturns = CompilerState.ConvertExpression(stmt, returnExpr, new VTAMCollection(returnVTAMs), false, false);
+						EmitValues(cs, ces, convertedReturns, true);
+					}
+					else
+					{
+						if(numRequiredReturnValues != 0)
+							Utility.CError(stmt, ErrorCode.ReturnValueCountMismatch, numRequiredReturnValues, "0");
+					}
+
+					local GuaranteeOuterBlock guarantee = block.FindGuaranteeingBlock();
+
+					if(guarantee == null)
+					{
+						// Just return out of frame
+						ces.AddInstruction(new PInstr { op = POp.Return, int1 = numRequiredReturnValues } );
+						ces.Pop(numRequiredReturnValues);
+					}
+					else
+					{
+						// Store and return to the guarantee
+						local LocalVariable const[] returnValueHolders = guarantee.ReturnValueHolders;
+						for(local largeuint i=0;i<numRequiredReturnValues;i++)
+						{
+							local LocalVariable rvHolder = returnValueHolders[numRequiredReturnValues - i - 1];
+							ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = rvHolder.stackIndex } );
+							ces.AddInstruction(new PInstr { op = POp.Move } );
+							ces.Pop(1);
+						}
+						ces.AddInstruction(new PInstr { op = POp.Jump, str1 = guarantee.ReturnPath } );
+					}
+				}
+
+				public static function void EmitAliasableJump(CodeEmissionState ces, notnull CodeBlock baseBlock, notnull string label)
+				{
+					local GuaranteeOuterBlock gBlock = baseBlock.FindGuaranteeingBlock();
+
+					if(gBlock == null)
+						ces.AddInstruction(new PInstr { op = POp.Jump, str1 = label } );
+					else
+					{
+						// Has a guarantee
+						local string newLabel = gBlock.AddLabelToGuarantee(label);
+						ces.AddInstruction(new PInstr { op = POp.Jump, str1 = newLabel } );
+					}
+				}
+
+				public static function void EmitBlockJump(notnull CodeEmissionState ces, CodeBlock.BlockLabelType blockLabelType,
+					string blockNameTarget, notnull CodeBlock baseBlock, notnull ASTNode incriminate)
+				{
+					local CodeBlock block = baseBlock;
+					while(true)
+					{
+						local string blockLabel = block.BlockLabelByType(blockLabelType);
+						if(blockLabel != null && (blockNameTarget == null || blockNameTarget == block.FlowControlLabel))
+						{
+							EmitAliasableJump(ces, baseBlock, blockLabel);
+							return;
+						}
+
+						if(block.isRootLevel)
+							Utility.CError(incriminate, ErrorCode.UnresolvedFlowControlTarget);
+
+						block = block.owner as CodeBlock;
+					}
+				}
+
+				public static function void EmitForEachLoopArray(notnull CompilerState cs, notnull CodeEmissionState ces, notnull ForEachLoopNode stmt,
+					notnull IValueExpression enumeratorExpr, notnull CodeBlock block)
+				{
+					if(!cs.gst.ContainsKey(CompilerConstants.arrayIndexType()))
+						throw UnresolvedExpressionSignal.instance;
+
+					local VType arrayIndexST = cs.gst[CompilerConstants.arrayIndexType()] as VType;
+					local CodeBlock iteratorBlock = new CodeBlock(null, block, block.LocalIndex);
+
+					// Since we're not compiling any statement blocks for this code block, need to push a code location
+					ces.PushCodeLocation(stmt.codeLocation);
+
+					local LocalVariable indexLocal = new LocalVariable(Utility.BlockMethod(block), arrayIndexST, false, false);
+
+					do
+					{
+						local uint opcode, largeint int1, int2, string res1, str1 = NativeServices.EncodeConstant("Core.largeuint", "-1", Constant.Signal.Value);
+
+						ces.AddInstruction(new PInstr { op = opcode as POp, res1 = res1, int1 = int1, int2 = int2, str1 = str1 } );
+						ces.Push(1);
+					};
+
+					ces.AddInstruction(new PInstr { op = POp.CreateLocal, res1 = CompilerConstants.arrayIndexType(), str1 = "foreach index" } );
+					ces.Pop();
+
+					iteratorBlock.CreateLocal(ces, indexLocal, null, false);
+					ces.Discharge();
+
+					local MultipleValues iteratorVariablesMV = EmitDeclsToLocals(cs, ces, stmt.declarations, iteratorBlock);
+					ces.Discharge();
+
+					local LocalVariable extractLocal;
+					local bool simpleExtract = false;
+					local LocalVariable[] mdIndexLocals = null;
+
+					local VType arrayInteriorType = (enumeratorExpr.vtams[0].vType as ArrayOfTypeObject).containedType;
+
+					if(iteratorVariablesMV.vtams.Length == 1 && Utility.TypeDirectlyCastable(arrayInteriorType, iteratorVariablesMV.vtams[0].vType))
+					{
+						extractLocal = iteratorVariablesMV.expressions[0] as LocalVariable;
+						simpleExtract = true;
+					}
+					else
+					{
+						extractLocal = new LocalVariable(Utility.BlockMethod(block), arrayInteriorType, false, false);
+
+						ces.AddInstruction(new PInstr { op = POp.AllocLocal, res1 = arrayInteriorType.longName, str1 = "foreach value" } );
+						iteratorBlock.CreateLocal(ces, extractLocal);
+
+						// Determine if this is a multidimensional array
+						local largeuint numDimensions = (enumeratorExpr.vtams[0].vType as ArrayOfTypeObject).dimensions;
+						if(numDimensions > 1)
+						{
+							mdIndexLocals = new LocalVariable[numDimensions];
+							for(local largeuint i=0;i<numDimensions;i++)
+							{
+								local LocalVariable lcl = new LocalVariable(Utility.BlockMethod(block), arrayIndexST, false, false);
+								if(i == numDimensions - 1)
+								{
+									do
+									{
+										local uint opcode, largeint int1, int2, string res1, str1 = NativeServices.EncodeConstant("Core.largeint", "-1", Constant.Signal.Value);
+										ces.AddInstruction(new PInstr { op = opcode as POp, res1 = res1, int1 = int1, int2 = int2, str1 = str1 } );
+										ces.Push(1);
+									};
+									ces.AddInstruction(new PInstr { op = POp.CreateLocal, res1 = CompilerConstants.arrayIndexType(), str1 = "foreach index " + i } );
+									ces.Pop();
+								}
+								else
+									ces.AddInstruction(new PInstr { op = POp.AllocLocal, res1 = CompilerConstants.arrayIndexType(), str1 = "foreach index " + i } );
+
+								iteratorBlock.CreateLocal(ces, lcl);
+								mdIndexLocals[i] = lcl;
+							}
+						}
+					}
+					ces.Discharge();
+
+					local LocalVariable arrayLocal = new LocalVariable(Utility.BlockMethod(block), enumeratorExpr.vtams[0].vType, false, false);
+					ces.AddInstruction(new PInstr { op = POp.AllocLocal, res1 = enumeratorExpr.vtams[0].vType.longName, str1 = "foreach array" } );
+					iteratorBlock.CreateLocal(ces, arrayLocal);
+					ces.Discharge();
+
+					// Assign the array
+					EmitAssign(cs, ces, Utility.SingleExpressionToList(arrayLocal), Utility.SingleExpressionToList(enumeratorExpr), iteratorBlock, stmt);
+					ces.Discharge();
+
+					// Emit the actual loop
+					local string lbl = ces.CreateLabel();
+					local string iterationLabel = lbl + "_foriter";
+					local string endLabel = lbl + "_forend";
+
+					// Make the iterator locals available
+					Utility.UnhideLocals(iteratorVariablesMV);
+
+					local CodeBlock forMainBlock = new CodeBlock(null, iteratorBlock, iteratorBlock.LocalIndex);
+					forMainBlock.SetFlowControlLabels(endLabel, iterationLabel, stmt.label);
+
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = iterationLabel } );
+					ces.Discharge();
+
+					if(mdIndexLocals != null)
+					{
+						// The op only requires a reference to the first local
+						ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = mdIndexLocals[0].stackIndex } );
+					}
+
+					ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = extractLocal.stackIndex } );
+					ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = indexLocal.stackIndex } );
+					ces.AddInstruction(new PInstr { op = POp.LocalRef, int1 = arrayLocal.stackIndex } );
+
+					ces.AddInstruction(new PInstr { op = POp.IterateArray, str1 = endLabel, int2 = (mdIndexLocals != null) ? (mdIndexLocals.Length as largeint) : (0 as largeint) } );
+
+					if(!simpleExtract)
+					{
+						local MVTemplate exprList = new MVTemplate();
+						exprList.Append(extractLocal);
+
+						if(mdIndexLocals == null)
+							exprList.Append(indexLocal);
+						else
+						{
+							foreach(LocalVariable subIndexLocal in mdIndexLocals)
+								exprList.Append(subIndexLocal);
+						}
+						EmitAssign(cs, ces, iteratorVariablesMV, exprList.ToMV(), forMainBlock, stmt);
+						ces.Discharge();
+					}
+
+					cs.CompileCodeBlock(ces, forMainBlock, stmt.block, false);
+					ces.AddInstruction(new PInstr { op = POp.Jump, str1 = iterationLabel } );
+
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = endLabel } );
+					ces.Discharge();
+
+					ces.CloseCodeBlock(iteratorBlock);
+				}
+
+				public static function void EmitForEachLoopValue(notnull CompilerState cs, notnull CodeEmissionState ces, notnull ForEachLoopNode stmt,
+					notnull IValueExpression baseEnumeratorExpr, notnull CodeBlock block)
+				{
+					local TokenNode getEnumeratorNode = new TokenNode(stmt.codeLocation);
+					getEnumeratorNode.token = new Token { codeLocation = stmt.codeLocation, tokenType = TokenType.Name, str = "GetEnumerator" };
+
+					local IndirectNode indirectNode = new IndirectNode(stmt.codeLocation);
+					indirectNode.operands = new ExpressionNode[] { new PrecompiledNode(stmt.codeLocation, baseEnumeratorExpr as ICObject) };
+					indirectNode.memberName = getEnumeratorNode;
+
+					local ExpressionListNode emptyParameterListNode = new ExpressionListNode(stmt.codeLocation);
+					emptyParameterListNode.expressions = new ExpressionNode[0];
+
+					local InvokeNode invokeNode = new InvokeNode(stmt.codeLocation);
+					invokeNode.operands = new ExpressionNode[] { indirectNode, emptyParameterListNode };
+
+					local IValueExpression enumeratorExpr = CompilerState.AdjustValueCount(cs.CompileExpression(invokeNode, block, true).ToValues(stmt), stmt, 1);
+
+					if(enumeratorExpr.vtams[0].vType is ArrayOfTypeObject)
+					{
+						// GetEnumerator returns an array
+						EmitForEachLoopArray(cs, ces, stmt, enumeratorExpr, block);
+						return;
+					}
+
+					// GetEnumerator returns an enumerable of some sort
+					local CodeBlock forMainBlock = new CodeBlock(null, block, block.LocalIndex);
+
+					// Since we're not compiling any statement blocks for this code block, need to push a code location
+					ces.PushCodeLocation(stmt.codeLocation);
+
+					local LocalVariable enumeratorLocal = new LocalVariable(Utility.BlockMethod(block), enumeratorExpr.vtams[0].vType, false, false);
+					ces.AddInstruction(new PInstr { op = POp.AllocLocal, res1 = enumeratorExpr.vtams[0].vType.longName, str1 = "foreach enumerator" } );
+					forMainBlock.CreateLocal(ces, enumeratorLocal);
+					ces.Discharge();
+
+					local MultipleValues iteratorVariablesMV = EmitDeclsToLocals(cs, ces, stmt.declarations, forMainBlock);
+					ces.Discharge();
+
+					EmitAssign(cs, ces, Utility.SingleExpressionToList(enumeratorLocal), Utility.SingleExpressionToList(enumeratorExpr), forMainBlock, stmt);
+					ces.Discharge();
+
+					local string lbl = ces.CreateLabel();
+					local string condLabel = lbl + "_forcond";
+					local string bodyLabel = lbl + "_forbody";
+					local string iterationLabel = lbl + "_foriter";
+					local string endLabel = lbl + "_forend";
+
+					forMainBlock.SetFlowControlLabels(endLabel, condLabel, stmt.label);
+
+					// Emit the HasNext check
+					local TokenNode hasNextNode = new TokenNode(stmt.codeLocation);
+					hasNextNode.token = new Token { codeLocation = stmt.codeLocation, tokenType = TokenType.Name, str = "HasNext" };
+
+					local IndirectNode hasNextIndirectNode = new IndirectNode(stmt.codeLocation);
+					hasNextIndirectNode.operands = new ExpressionNode[] { new PrecompiledNode(stmt.codeLocation, enumeratorLocal) };
+					hasNextIndirectNode.memberName = hasNextNode;
+
+					local InvokeNode hasNextInvoke = new InvokeNode(stmt.codeLocation);
+					hasNextInvoke.operands = new ExpressionNode[] { hasNextIndirectNode, emptyParameterListNode };
+
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = condLabel } );
+					ces.Discharge();
+					
+					local IValueExpression cond = cs.CompiledExprToBoolean(stmt, cs.CompileExpression(hasNextInvoke, forMainBlock, true).ToValues(stmt));
+					EmitLogical(cs, ces, cond, iterationLabel, endLabel);
+					ces.Discharge();
+
+					// Emit the GetNext call and assign
+					local TokenNode getNextNode = new TokenNode(stmt.codeLocation);
+					getNextNode.token = new Token { codeLocation = stmt.codeLocation, tokenType = TokenType.Name, str = "GetNext" };
+
+					local IndirectNode getNextIndirectNode = new IndirectNode(stmt.codeLocation);
+					getNextIndirectNode.operands = new ExpressionNode[] { new PrecompiledNode(stmt.codeLocation, enumeratorLocal) };
+					getNextIndirectNode.memberName = getNextNode;
+
+					local InvokeNode getNextInvoke = new InvokeNode(stmt.codeLocation);
+					getNextInvoke.operands = new ExpressionNode[] { getNextIndirectNode, emptyParameterListNode };
+
+					local IValueExpression getNextExpr = cs.CompileExpression(getNextInvoke, forMainBlock, true).ToValues(stmt);
+
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = iterationLabel } );
+					ces.Discharge();
+
+					local IValueExpression truncatedGetNextExpr = CompilerState.AdjustValueCount(Utility.SingleExpressionToList(getNextExpr), stmt, iteratorVariablesMV.vtams.Length);
+					EmitAssign(cs, ces, iteratorVariablesMV, truncatedGetNextExpr, forMainBlock, stmt);
+
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = bodyLabel } );
+					ces.Discharge();
+
+					// Emit the actual code
+					Utility.UnhideLocals(iteratorVariablesMV);
+
+					local CodeBlock forBodyBlock = new CodeBlock(null, forMainBlock, forMainBlock.LocalIndex);
+					cs.CompileCodeBlock(ces, forBodyBlock, stmt.block, false);
+
+					ces.AddInstruction(new PInstr { op = POp.Jump, str1 = condLabel } );
+					ces.AddInstruction(new PInstr { op = POp.Label, str1 = endLabel } );
+					ces.Discharge();
+
+					ces.CloseCodeBlock(forMainBlock);
+				}
+
+				public static function void EmitForEachLoop(notnull CompilerState cs, notnull CodeEmissionState ces, notnull ForEachLoopNode stmt, notnull CodeBlock block)
+				{
+					// stmt.declarations, stmt.enumerator, stmt.block...
+					local IValueExpression enumeratorExpr = CompilerState.AdjustValueCount(cs.CompileExpression(stmt.enumerator, block, true).ToValues(stmt), stmt, 1);
+
+					if(enumeratorExpr.vtams[0].vType is ArrayOfTypeObject)
+						EmitForEachLoopArray(cs, ces, stmt, enumeratorExpr, block);
+					else
+						EmitForEachLoopValue(cs, ces, stmt, enumeratorExpr, block);
+				}
+			}
+		}
+	}
+}

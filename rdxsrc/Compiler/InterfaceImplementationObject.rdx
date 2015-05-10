@@ -1,0 +1,24 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class InterfaceImplementationObject
+		{
+			public property StructuredTypeObject interfaceType;
+			public property ASTNode incriminateNode;
+			public property largeuint vftOffset;
+			public property bool wasDefined;	// True if this was handled already.  May be true if copied from a parent type.
+
+			public function void Initialize(CompilerState cs, StructuredTypeObject t, ASTNode incriminate)
+			{
+				this.interfaceType = t;
+				this.incriminateNode = incriminate;
+			}
+		}
+	}
+}

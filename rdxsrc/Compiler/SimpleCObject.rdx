@@ -1,0 +1,23 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class SimpleCObject implements ICObject
+		{
+			public function IValueExpression ToValues(ASTNode incriminate)
+			{
+				if(this is IValueExpression)
+					return this as IValueExpression;
+				Utility.CError(incriminate, ErrorCode.ExpectedValueExpression, this.printableName);
+				return null;
+			}
+
+			public abstract virtual intercept function string printableName();
+		}
+	}
+}

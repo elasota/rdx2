@@ -1,0 +1,82 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class ObjectProperty extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression object;
+			public property PropertyObject prop;
+
+			public function void Initialize(CompilerState cs, IValueExpression left, PropertyObject member, ASTNode incriminate)
+			{
+				if(!member.typeOf.isCompiled)
+					throw new UnresolvedExpressionSignal();
+
+				local StructuredTypeObject leftVT = left.vtams[0].vType as StructuredTypeObject;
+
+				left = CompilerState.AdjustValueCount(left, incriminate, 1);
+
+				local AccessMode resultAM;
+
+				if(leftVT.declType == "struct" || leftVT.declType == "enum")
+				{
+					local VTAMCollection propertyVTAMs = new VTAMCollection(
+						new VTAM
+						{
+							accessMode = AccessMode.AnyP,
+							vType = leftVT
+						}
+					);
+
+					left = CompilerState.ConvertExpression(incriminate, left, propertyVTAMs);
+					resultAM = left.vtams[0].accessMode;
+
+					if(member.isConst)
+						resultAM = AccessMode.CP;
+				}
+				else if(leftVT.declType == "class")
+				{
+					local VTAMCollection propertyVTAMs = new VTAMCollection(
+						new VTAM
+						{
+							accessMode = AccessMode.R,
+							vType = leftVT
+						}
+					);
+
+					left = CompilerState.ConvertExpression(incriminate, left, propertyVTAMs);
+					resultAM = AccessMode.R;
+				}
+				else
+					Utility.Assert(false, "Bad type to get a property from");
+
+				this._vtams = new VTAMCollection(
+					new VTAM
+					{
+						accessMode = resultAM,
+						vType = member.typeOf.refType
+					}
+				);
+
+				this.object = left;
+				this.prop = member;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				CodeEmission.Emit.EmitValues(cs, ces, this.object, false);
+				ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Property, int1 = this.prop.propertyIndex } );
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "object property";
+			}
+		}
+	}
+}

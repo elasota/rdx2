@@ -1,0 +1,186 @@
+/*
+ * Copyright (C) 2011-2013 Eric Lasota
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+namespace Core
+{
+	namespace RDX
+	{
+		[cpp name("::rdxCType") header("rdx_programmability.hpp") coreheader]
+		public localized abstract class Type
+		{
+		}
+
+		[cpp name("::rdxSInstructionFileInfo") header("rdx_programmability.hpp") coreheader]
+		public struct InstructionFileInfo
+		{
+			public const property string filename;
+			public const property int line;
+			public const property int firstInstruction;
+		}
+
+		[cpp name("::rdxCArrayOfType") header("rdx_programmability.hpp") coreheader]
+		public final class ArrayOfType extends Type
+		{
+			public const property Type type;
+			public const property int numDimensions;
+			public const property bool isConstant;
+		}
+
+		[cpp name("::rdxCDelegateType") header("rdx_programmability.hpp") coreheader]
+		public final class DelegateType extends Type
+		{
+			public const mustbeconst property MethodParameter const[]	parameters;
+			public const mustbeconst property Type const[] 				returnTypes;
+		}
+
+		[cpp name("::rdxSEnumerant") header("rdx_programmability.hpp") coreheader]
+		public struct Enumerant
+		{
+			public typedef UnderlyingType = uint;
+
+			public const property string name;
+			public const property UnderlyingType value;
+		}
+
+		public enum StorageSpecifier
+		{
+			SS_Class,
+			SS_RefStruct,
+			SS_ValStruct,
+			SS_Enum,
+			SS_Interface,
+		}
+
+		[cpp name("::rdxCStructuredType") header("rdx_programmability.hpp") coreheader]
+		public final class StructuredType extends Type
+		{
+			public const property StructuredType								parentClass;
+			public const mustbeconst property InterfaceImplementation const[]	interfaces;
+			public const property StorageSpecifier								storageSpecifier;
+			public const mustbeconst property Method const[]					virtualMethods;
+			public const mustbeconst property Property const[]					properties;
+			public const mustbeconst property Enumerant const[]					enumerants;
+			public const property Object										defaultValue;
+			public const property bool											isFinal;
+			public const property bool											isAbstract;
+			public const property bool											isLocalized;
+		}
+
+		[cpp name("::rdxSMethodParameter") header("rdx_programmability.hpp") coreheader]
+		public struct MethodParameter
+		{
+			public const property Type type;
+			public const property bool isConstant;
+			public const property bool isNotNull;
+		}
+
+		[cpp name("::rdxCMethod") header("rdx_programmability.hpp") coreheader]
+		public final class Method
+		{
+			public const mustbeconst property MethodParameter const[]		parameters;
+			public const mustbeconst property Type const[]					returnTypes;
+			public const mustbeconst property byte const[]					bytecode;
+			public const mustbeconst property Object const[]				resArgs;
+			public const mustbeconst property InstructionFileInfo const[]	instructionFileInfos;
+			public const property int										numInstructions;
+			public const property int										vftIndex;
+			public const property int										thisParameterOffset;
+			public const property bool										isAbstract;
+		}
+
+		[cpp name("::rdxCRuntimeThread") header("rdx_programmability.hpp") coreheader]
+		public final class Thread
+		{
+			public native static function Thread GetCurrent();
+		}
+
+		[cpp name("::rdxCMethod") header("rdx_programmability.hpp") coreheader]
+		public struct Property
+		{
+			public const property string	name;
+			public const property Type 		type;
+			public const property bool 		isConstant;
+			public const property bool 		mustBeConstant;
+		}
+
+		[cpp name("::rdxSInterfaceImplementation") header("rdx_programmability.hpp") coreheader]
+		public struct InterfaceImplementation
+		{
+			public const property StructuredType	type;
+			public const property int 				vftOffset;
+		}
+
+		public class OutOfMemoryException extends Exception
+		{
+			public resource OutOfMemoryException instance;
+		}
+
+		public class InternalFailureException extends Exception
+		{
+			public resource InternalFailureException instance;
+		}
+
+		public class DivideByZeroException extends Exception
+		{
+			public resource DivideByZeroException instance;
+		}
+
+		public class NullReferenceException extends Exception
+		{
+			public resource NullReferenceException instance;
+		}
+
+		public class IndexOutOfBoundsException extends Exception
+		{
+			public resource IndexOutOfBoundsException instance;
+		}
+
+		public class ImmutableObjectException extends Exception
+		{
+			public resource ImmutableObjectException instance;
+		}
+
+		public class AllocationFailureException extends Exception
+		{
+			public resource AllocationFailureException instance;
+		}
+
+		public class IncompatibleConversionException extends Exception
+		{
+			public resource IncompatibleConversionException instance;
+		}
+
+		public class InvalidOperationException extends Exception
+		{
+			public resource InvalidOperationException instance;
+		}
+
+		public class UnspecifiedException extends Exception
+		{
+			public resource UnspecifiedException instance;
+		}
+
+		public class StackOverflowException extends Exception
+		{
+			public resource StackOverflowException instance;
+		}
+	}
+}

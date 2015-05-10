@@ -1,0 +1,52 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class LocalVariable extends ValueExpression implements IEmittable
+		{
+			public property MethodObject method;
+			public property bool isPointer;
+			public property bool isConst;
+			public property bool isInvisible;
+			public property largeuint stackIndex;
+			public property bool tempActive;
+			public property bool isTemporary;
+			public property bool holdOpenTemp;
+			public property bool invisibleSymbol;
+			public property largeuint numTempReferences;
+
+			public function void Initialize(MethodObject method, VType rType, bool isPointer, bool isConst)
+			{
+				local AccessMode accessMode = isPointer ? (isConst ? AccessMode.CP : AccessMode.P) : AccessMode.L;
+				this.isPointer = isPointer;
+				this.isConst = isConst;
+				this.method = method;
+				this._vtams = new VTAMCollection(new VTAM { vType = rType, accessMode = accessMode });
+				this.isInvisible = false;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = this.stackIndex } );
+				if(this.isPointer)
+				{
+					// Move pointer to stack
+					ces.AddInstruction( new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+					ces.Push();
+				}
+				else
+					ces.Push(1, this);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "local variable";
+			}
+		}
+	}
+}

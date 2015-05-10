@@ -1,0 +1,32 @@
+using Core;
+using Core.RDX;
+
+namespace Apps
+{
+	namespace Common
+	{
+		public class Console
+		{
+			public native static function void WriteLine(string str);
+			//public native static function void WriteLine(int i);
+		}
+
+		public class Tests
+		{
+			//public static delegate int TestReentryDelegate(string str1, string str2);
+			//public native static function void TestReentry(string str, TestReentryDelegate func);
+			//public native static function void StackTrace();
+		}
+
+		public class Serialization
+		{
+			public /*native*/ static function void WriteObject(notnull string str, notnull Object obj, bool committed)
+			{
+			}
+			public /*native*/ static function Object ReadObject(notnull string str, bool text)
+			{
+				return null;
+			}
+		}
+	}
+}

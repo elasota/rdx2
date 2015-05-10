@@ -1,0 +1,26 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class EnumerantObject
+		{
+			public property string name;
+			public property Enumerant.UnderlyingType value;
+			public property Constant constVal;
+			public property TokenNode nameToken;
+
+			public function void Initialize(string name, Enumerant.UnderlyingType value, Constant constVal, TokenNode nameToken)
+			{
+				this.name = name;
+				this.value = value;
+				this.constVal = constVal;
+				this.nameToken = nameToken;
+			}
+		}
+	}
+}

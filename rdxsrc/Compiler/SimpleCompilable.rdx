@@ -1,0 +1,40 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class SimpleCompilable extends SimpleCObject implements ICompilable
+		{
+			private property bool _isCompiled;
+
+			protected property string _longName;
+			protected property ASTNode _incriminateNode;
+
+			public function void FinishCompile()
+			{
+				_isCompiled = true;
+			}
+
+			public intercept function bool isCompiled()
+			{
+				return _isCompiled;
+			}
+
+			public intercept function string longName()
+			{
+				return _longName;
+			}
+
+			public intercept function ASTNode incriminateNode()
+			{
+				return _incriminateNode;
+			}
+
+			public abstract virtual function bool Compile(CompilerState cs);
+		}
+	}
+}

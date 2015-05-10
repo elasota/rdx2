@@ -1,0 +1,51 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class ParameterList extends CompilableObject
+		{
+			public property MethodParameterObject const[] parameters;
+			public property string prettyName;
+
+			public function void Initialize(CompilerState cs, MethodParameterObject const[] parameters)
+			{
+				this.parameters = parameters;
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local string longName = "(";
+				foreach(MethodParameterObject param in this.parameters)
+				{
+					if(!param.type.isCompiled || param.type.refType.longName == null)
+						return false;
+					if(longName != "(")
+						longName += ",";
+					if(param.isNotNull)
+						longName += "notnull ";
+					else if(param.isConst)
+						longName += "const ";
+
+					longName += param.type.refType.longName;
+				}
+				longName += ")";
+
+				this.prettyName = longName;
+				this._longName = "#PL-" + longName;
+				FinishCompile();
+
+				cs.gst[this.longName] = this;
+				return true;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "parameter list";
+			}
+		}
+	}
+}

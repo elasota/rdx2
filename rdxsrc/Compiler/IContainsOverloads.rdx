@@ -1,0 +1,16 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface IContainsOverloads
+		{
+			public intercept function string name();
+			public intercept function List:<ICallable> overloads();
+		}
+	}
+}

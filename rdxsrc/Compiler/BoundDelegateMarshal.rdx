@@ -1,0 +1,46 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class BoundDelegateMarshal extends VType
+		{
+			// FIXME: Can these be consolidated?
+			public property BoundDelegateTypeObject owner;
+			public property BoundDelegateTypeObject bdt;
+
+			public property ParameterList actualParameterList;
+			public property string invokeName;
+			public property TypeTuple returnTypes;
+			public property ICallable method;
+			public property VType thisType;
+
+			public property CodeEmission.PInstr const[] instructions;
+
+			public function void Initialize(BoundDelegateTypeObject owner, string invokeName, TypeTuple returnTypes, BoundDelegateTypeObject bdt, ICallable method)
+			{
+				(this as VType).explicit:Initialize();
+
+				this.owner = owner;
+				this.invokeName = invokeName;
+				this.returnTypes = returnTypes;
+				this.bdt = bdt;
+				this.method = method;
+			}
+
+			public intercept function void longName(string str)
+			{
+				this._longName = str;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "bound delegate marshal";
+			}
+		}
+	}
+}

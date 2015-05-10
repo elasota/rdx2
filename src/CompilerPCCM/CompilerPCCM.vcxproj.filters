@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\pccm">
+      <UniqueIdentifier>{58ce97b1-869f-4754-9dc9-47df97c95988}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\exported\rdxc_pccm_glue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rdxc_pccm_dll.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_plugin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\rdxcompilerservices\rdxc_lexstate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\rdxcompilerservices\rdxc_nativeservices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_0.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_1.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_2.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_3.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_4.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_5.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_6.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_7.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_8.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_9.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_10.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exported\rdxc_cluster_11.cpp">
+      <Filter>Source Files\pccm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\exported\RDXInterface\Core\Collections\HashSetBase.Proto.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

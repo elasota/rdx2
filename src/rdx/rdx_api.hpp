@@ -1,0 +1,25 @@
+#ifndef __RDX_API_HPP__
+#define __RDX_API_HPP__
+
+#include "rdx_platform.hpp"
+
+#ifdef RDX_BUILD_DYNLIB
+#	define RDX_DYNLIB_API RDX_DYNLIB_EXPORT
+#else
+#	define RDX_DYNLIB_API RDX_DYNLIB_IMPORT
+#endif
+
+
+#ifdef RDX_BUILD_UTIL_DYNLIB
+#	define RDX_UTIL_DYNLIB_API RDX_DYNLIB_EXPORT
+#else
+#	define RDX_UTIL_DYNLIB_API RDX_DYNLIB_IMPORT
+#endif
+
+#ifdef RDX_BUILD_COMPRESSION_DYNLIB
+#	define RDX_COMPRESSION_DYNLIB_API RDX_DYNLIB_EXPORT
+#else
+#	define RDX_COMPRESSION_DYNLIB_API RDX_DYNLIB_IMPORT
+#endif
+
+#endif

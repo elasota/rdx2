@@ -1,0 +1,39 @@
+using Core;
+using Core.Collections;
+using Core.RDX;
+using Apps.Common;
+
+namespace Apps
+{
+	namespace PluginTest
+	{
+		
+		[cpp nativeproperties(
+			"RDX::BasicTypes::Int nativeField"
+			)]
+		public class MyNativeClass
+		{
+			public native intercept function void NativeField(int v);
+			public native intercept function int NativeField();
+
+			public native function void PrintNativeField();
+
+			public function void ThisTest(int a, int b, int c)
+			{
+			}
+		}
+
+		public class PluginTestApp
+		{
+			public static function int main(string const[] args)
+			{
+				local MyNativeClass mnc = new MyNativeClass();
+
+				mnc.NativeField = 100;
+				mnc.PrintNativeField();
+
+				return 0;
+			}
+		}
+	}
+}

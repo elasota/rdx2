@@ -1,0 +1,33 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class MethodDelegation extends ValueExpression implements IEmittable
+		{
+			public property MethodObject method;
+
+			public function void Initialize(MethodObject m, DelegateTypeObject dt)
+			{
+				this.method = m;
+				this._vtams = new VTAMCollection(new VTAM { accessMode = AccessMode.R, vType = dt });
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Res, res1 = this.method.longName } );
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Cast, res1 = this._vtams[0].vType.longName } );
+				ces.Push(1);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "method delegation";
+			}
+		}
+	}
+}

@@ -1,0 +1,94 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class DelegateTypeObject extends VType implements ICallable
+		{
+			protected property bool _isAbstract;
+			protected property TokenNode _name;
+			protected property TypeTuple _returnTypes;
+			protected property ParameterList _actualParameterList;
+			protected property ParameterList _parameterList;
+			protected property largeuint _thisParameterIndex;
+
+			public property bool isStatic;
+			public property string invokeName;
+
+			public function void Initialize()
+			{
+				(this as VType).explicit:Initialize();
+			}
+
+			public final function bool Compile(CompilerState cs)
+			{
+				if(!_parameterList.isCompiled)
+					return false;
+				if(!_returnTypes.isCompiled)
+					return false;
+
+				local string refName = this.returnTypes.longName + this._parameterList.longName;
+				local string longName;
+
+				if(this.isStatic)
+					longName = "#DS-" + refName;
+				else
+				{
+					longName = "#DB-" + refName;
+					this.invokeName = longName + "/invoke";
+				}
+
+				this.prettyName = "delegate " + this.returnTypes.prettyName;
+				if(!this.isStatic)
+					this.prettyName = "bound " + this.prettyName;
+
+				this.prettyName = this.prettyName + this._parameterList.prettyName;
+				this._longName = longName;
+				FinishCompile();
+
+				cs.gst[this.longName] = this;
+
+				return true;
+			}
+
+			public final intercept function bool IsObjectReference()
+			{
+				return true;
+			}
+
+			public intercept function bool isAbstract()
+			{
+				return _isAbstract;
+			}
+
+			public intercept function TokenNode name()
+			{
+				return _name;
+			}
+
+			public intercept function TypeTuple returnTypes()
+			{
+				return _returnTypes;
+			}
+
+			public intercept function ParameterList actualParameterList()
+			{
+				return _actualParameterList;
+			}
+
+			public intercept function ParameterList parameterList()
+			{
+				return _parameterList;
+			}
+
+			public intercept function largeuint thisParameterIndex()
+			{
+				return _thisParameterIndex;
+			}
+		}
+	}
+}

@@ -1,0 +1,47 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class PlaceholderVType extends VType
+		{
+			public final intercept function string printableName()
+			{
+				return "placeholder value type";
+			}
+		}
+
+		public class VType extends SimpleCompilable
+		{
+			public property string prettyName;
+			public property Dictionary:<string, ArrayOfTypeObject> arraysOf;
+
+			public resource PlaceholderVType SetIndexType = new PlaceholderVType { };
+			public resource PlaceholderVType InterceptType = new PlaceholderVType { };
+
+			public function void Initialize()
+			{
+				arraysOf = new Dictionary:<string, ArrayOfTypeObject>();
+			}
+
+			public virtual intercept function bool IsObjectReference()
+			{
+				return false;
+			}
+
+			public virtual intercept function bool IsRefStruct()
+			{
+				return false;
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				return false;
+			}
+		}
+	}
+}

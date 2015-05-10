@@ -1,0 +1,33 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class InitializeAndRecover extends ValueExpression implements IEmittable
+		{
+			public property bool disallowWrites;
+			public property IValueExpression expression;
+
+			public function void Initialize(bool disallowWrites, IValueExpression expression, const VTAMCollection vtams)
+			{
+				this._vtams = vtams;
+				this.disallowWrites = disallowWrites;
+				this.expression = expression;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				CodeEmission.Emit.EmitValues(cs, ces, this.expression, false);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "initialize and recover";
+			}
+		}
+	}
+}

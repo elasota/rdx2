@@ -1,0 +1,734 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class StructuredTypeObject extends VType implements IVisibilityControlled
+		{
+			private property Visibility _visibility;
+
+			public property Namespace ns;
+			public property string declType;
+			public property TypeFinalizer finalizer;
+			public property List:<InterfaceImplementationObject> interfaces;
+			public property StructuredTypeObject parentType;
+			public property bool isTemplate;
+			public property bool isAbstract;
+			public property bool isFinal;
+			public property bool isLocalized;
+			public property bool isFromTemplate;
+			public property bool mustBeRef;
+			public property MethodObject abstractBlame;
+			public property MemberDeclNode uncompiledNode;
+			public property List:<Initializer> initializers;
+			public property Dictionary:<string, Initializer> initializersSet;
+			public property bool byVal;
+			public property StructuredTypeObject baseClass;
+			public property List:<MethodObject> methods;
+			public property List:<MethodObject> virtualMethods;
+			public property StructuredTypeObject aliasVFT;
+			public property StructuredTypeObject aliasInterfaces;
+			public property StructuredTypeObject aliasProperties;
+			public property List:<MethodGroup> methodGroups;
+			public property InstanciatedNamespace internalScope;
+			public property Scope scope;
+			public property List:<PropertyObject> properties;
+			public property EnumerantObject const[] enumerants;
+			public property HashSet:<StructuredTypeObject> implementedInterfaces;
+			public property string name;
+			public property AttributeFamilyCollection attribTags;
+			public property Dictionary:<string, StructuredTypeObject> templateInstances;
+			public property VType const[] templateParameters;
+
+			public property HashSet:<string> defaultDependencySet;
+			public property bool isPrivateType;
+			public property DefaultInstance defaultValue;
+
+			public function void Initialize(Namespace ns, Scope scope, AttributeFamilyCollection attribTags, MemberDeclNode node)
+			{
+				(this as VType).explicit:Initialize();
+
+				isTemplate = (node.templateParameters != null);
+
+				this.isTemplate = isTemplate;
+				this.ns = ns;		// Namespace containing members of the type, named after the type
+				this.scope = scope;	// Scope external to the type, for resolving dependencies
+				this.methods = new List:<MethodObject>();
+				this.methodGroups = new List:<MethodGroup>();
+				this.virtualMethods = new List:<MethodObject>();
+				this.properties = new List:<PropertyObject>();
+				this.arraysOf = new Dictionary:<string, ArrayOfTypeObject>();
+				this.enumerants = null;
+				this.interfaces = new List:<InterfaceImplementationObject>();
+				this.implementedInterfaces = new HashSet:<StructuredTypeObject>();
+				this.initializers = new List:<Initializer>();
+				this.initializersSet = new Dictionary:<string, Initializer>();
+				this.name = node.name.token.str;
+				this.attribTags = attribTags;
+				this.uncompiledNode = node;
+				this.internalScope = new InstanciatedNamespace(scope, ns, this);
+				this._incriminateNode = node;
+
+				if(isTemplate)
+					this.templateInstances = new Dictionary:<string, StructuredTypeObject>();
+			}
+
+			public function StructuredTypeObject ConstructTypeTemplate(CompilerState cs, VType const[] templateParameters)
+			{
+				local string tParameters = ":<";
+				local string prettyParameters = ":<";
+
+				foreach(VType tp, largeuint idx in templateParameters)
+				{
+					if(idx != 0)
+					{
+						tParameters = tParameters + ",";
+						prettyParameters = prettyParameters + ",";
+					}
+					tParameters = tParameters + tp.longName;
+					prettyParameters = prettyParameters + tp.prettyName;
+				}
+				tParameters = tParameters + ">";
+				prettyParameters = prettyParameters + ">";
+
+				local string longName = "#Tmpl." + this.longName + tParameters;
+				local string prettyName = this.prettyName + prettyParameters;
+
+				if(this.templateInstances.ContainsKey(tParameters))
+					return this.templateInstances[tParameters];
+
+				if(cs.instancedTemplateLimit == 0)
+					Utility.CError(this.uncompiledNode, ErrorCode.TooManyTemplates);
+
+				cs.instancedTemplateLimit--;
+
+				local Namespace ns = new Namespace(this.ns.owner, this.name + tParameters, "#Tmpl.");
+				local Scope templatedScope = new Scope(this.scope);
+				ns.isFromTemplate = true;
+
+				// This needs to be already true since we don't have the originating node for cerror
+				Utility.Assert(templateParameters.Length == this.uncompiledNode.templateParameters.parameters.Length);
+
+				foreach(TokenNode tp, largeuint idx in this.uncompiledNode.templateParameters.parameters)
+					templatedScope.InsertUnique(tp.token.str, templateParameters[idx], tp);
+
+				local StructuredTypeObject templateST = new StructuredTypeObject {
+					isTemplate = false,
+					ns = ns,
+					scope = templatedScope,
+					internalScope = new InstanciatedNamespace(templatedScope, ns, null),
+					methods = new List:<MethodObject>(),
+					methodGroups = new List:<MethodGroup>(),
+					virtualMethods = new List:<MethodObject>(),
+					properties = new List:<PropertyObject>(),
+					arraysOf = new Dictionary:<string, ArrayOfTypeObject>(),
+					name = this.name + tParameters,
+					interfaces = new List:<InterfaceImplementationObject>(),
+					templateParameters = templateParameters,
+					implementedInterfaces = new HashSet:<StructuredTypeObject>(),
+					initializers = new List:<Initializer>(),
+					initializersSet = new Dictionary:<string, Initializer>(),
+					_longName = _longName,
+					prettyName = prettyName,
+					uncompiledNode = this.uncompiledNode,
+				};
+			
+				// Add
+				this.templateInstances[tParameters] = templateST;
+				cs.uncompiled.Add(templateST);
+
+				return templateST;
+			}
+
+
+			public function void ExtendClass(CompilerState cs, StructuredTypeObject baseST)
+			{
+				this.baseClass = baseST;
+
+				// Try to alias existing tables
+				this.aliasVFT = baseST.aliasVFT;
+				if(this.aliasVFT == null)
+					this.aliasVFT = baseST;
+
+				this.aliasProperties = baseST.aliasProperties;
+				if(this.aliasProperties == null)
+					this.aliasProperties = baseST;
+
+				this.aliasInterfaces = baseST.aliasInterfaces;
+				if(this.aliasInterfaces == null)
+					this.aliasInterfaces = baseST;
+
+				// Copy everything except private members
+				foreach(StructuredTypeObject impl in baseST.implementedInterfaces)
+					this.implementedInterfaces.Add(impl);
+				foreach(InterfaceImplementationObject interf in baseST.interfaces)
+					this.interfaces.Add(interf);
+
+				foreach(MethodObject m in baseST.methods)
+				{
+					if(m.visibility != Visibility.Private)
+						this.methods.Add(m);
+				}
+
+				foreach(MethodGroup mg in baseST.methodGroups)
+				{
+					if(mg.visibility != Visibility.Private)
+					{
+						local MethodGroup clonedGroup = mg.Clone(cs);
+						this.methodGroups.Add(clonedGroup);
+						this.ns.InsertUnique(mg.name, clonedGroup, null);
+					}
+				}
+
+				foreach(PropertyObject p in baseST.properties)
+				{
+					if(p.visibility == Visibility.Private)
+					{
+						this.properties.Add(p.Privatize());
+						if(p.definedByType == baseST)
+							this.aliasProperties = null;	// This triggered the change, can't recycle the table
+					}
+					else
+					{
+						this.properties.Add(p);
+						this.ns.InsertUnique(p.name, p, null);
+					}
+				}
+
+				// Copy in any other non-private symbols, but don't copy method groups or properties because those were already copied
+				foreach(string k, ICObject v in baseST.ns.symbols)
+				{
+					if(!(v is PropertyObject) && !(v is MethodGroup) && (v is IVisibilityControlled) && (v as IVisibilityControlled).visibility != Visibility.Private)
+						this.ns.symbols[k] = v;
+				}
+
+				foreach(MethodObject m in baseST.virtualMethods)
+					this.virtualMethods.Add(m);
+			}
+
+
+			public function void InsertProperties(CompilerState cs, MemberDeclNode propertyNode)
+			{
+				local Visibility visibility = Utility.DefaultVisibility(propertyNode.accessDescriptor.visibility);
+				local bool isStatic = (propertyNode.declType.token.tokenType == TokenType.RW_Resource);
+				local bool isConst = (propertyNode.accessDescriptor.constFlag != null);
+				local bool mustBeConst = (propertyNode.accessDescriptor.mustBeConstFlag != null);
+
+				if(propertyNode.accessDescriptor.staticFlag != null)
+					Utility.CError(propertyNode, ErrorCode.StaticProperty);
+
+				if(propertyNode.initializers != null && propertyNode.initializers.expressions.Length != propertyNode.declList.declarations.Length)
+					Utility.CError(propertyNode, ErrorCode.PropertyInitializerCountMismatch);
+
+				foreach(TypedDeclaration decl, largeuint idx in propertyNode.declList.declarations)
+				{
+					local TypeReference typeRef = new TypeReference(cs, decl.type, this.internalScope, false);
+					local Initializer initializer = null;
+
+					if(propertyNode.initializers != null)
+						initializer = new Initializer(cs, propertyNode.initializers.expressions[idx], this, decl.name);
+
+					if(isStatic)
+					{
+						local StaticInstance si = new StaticInstance(cs, this, typeRef, visibility, decl.name as TokenNode, isConst, propertyNode);
+						si.hasInitializer = (propertyNode.initializers != null);
+						si.isAnonymous = (propertyNode.accessDescriptor.anonymousFlag != null);
+						this.ns.InsertUnique(decl.name.token.str, si, decl.name);
+					}
+					else
+					{
+						local PropertyObject p = new PropertyObject(cs, this, typeRef, visibility, isConst, mustBeConst, decl.name);
+
+						this.properties.Add(p);
+						p.propertyIndex = this.properties.Length;
+						this.ns.InsertUnique(decl.name.token.str, p, decl.name);
+					}
+				}
+
+				// Don't alias properties any more
+				this.aliasProperties = null;
+			}
+
+			public function void InsertTypedef(CompilerState cs, MemberDeclNode tdNode)
+			{
+				local TypeReference typeRef = new TypeReference(cs, tdNode.specifiedType, this.internalScope, false);
+				typeRef.visibility = Utility.DefaultVisibility(tdNode.accessDescriptor.visibility);
+				this.ns.InsertUnique(tdNode.name.token.str, typeRef, tdNode.name);
+			}
+
+			public function void InsertStructuredType(CompilerState cs, MemberDeclNode decl)
+			{
+				local StructuredTypeObject uncompiledType = new StructuredTypeObject(new Namespace(this.ns, decl.name.token.str, null), this.internalScope, decl.attribTags, decl);
+				this.ns.InsertUnique(decl.name.token.str, uncompiledType, decl.name);
+
+				cs.uncompiled.Add(uncompiledType);
+			}
+
+			public function void InsertMethod(CompilerState cs, MemberDeclNode methodNode)
+			{
+				local string methodName;
+				local TokenNode methodNameNode;
+				local Visibility visibility = Utility.DefaultVisibility(methodNode.accessDescriptor.visibility);
+				local bool isStatic = (methodNode.accessDescriptor.staticFlag != null);
+				local bool isIntercept = (methodNode.accessDescriptor.interceptFlag != null);
+				local MethodGroup mg;
+
+				if(methodNode.declType.token.tokenType == TokenType.RW_Coerce || methodNode.declType.token.tokenType == TokenType.RW_Promote)
+				{
+					local TokenNode n = new TokenNode(methodNode.declType.token.codeLocation);
+					n.token = new Token { codeLocation = methodNode.declType.token.codeLocation, tokenType = TokenType.Name, str = "#coerce" };
+					methodNameNode = n;
+				}
+				else
+					methodNameNode = methodNode.name;
+
+				methodName = methodNameNode.token.str;
+
+				local bool isArrayIntercept = (methodName == "__setindex");
+
+				if(this.ns.symbols.ContainsKey(methodName))
+				{
+					local Object mgObj = this.ns.symbols[methodName] as MethodGroup;
+					if(!(mg is MethodGroup))
+						Utility.CError(methodNode, ErrorCode.MethodCollidesWithNonMethod);
+
+					if(mg.visibility != visibility)
+						Utility.CError(methodNode, ErrorCode.MethodVisibilityMismatch);
+					if(mg.isStatic != isStatic)
+						Utility.CError(methodNode, ErrorCode.MethodStaticMismatch);
+					if(mg.isIntercept != isIntercept)
+						Utility.CError(methodNode, ErrorCode.MethodInterceptMismatch);
+				}
+				else
+				{
+					mg = new MethodGroup(cs, methodNameNode.token.str, visibility, isStatic, isIntercept, isArrayIntercept, methodNameNode);
+					this.ns.InsertUnique(methodNameNode.token.str, mg, methodNameNode);
+					this.methodGroups.Add(mg);
+				}
+
+				// Convert parameters
+				local List:<MethodParameterObject> parameters = new List:<MethodParameterObject>();
+				local TypeReference[] returnTypes = new TypeReference[methodNode.returnTypes.types.Length];
+
+				if(methodNode.declType.token.tokenType == TokenType.RW_Coerce || methodNode.declType.token.tokenType == TokenType.RW_Promote)
+				{
+					if(methodNode.returnTypes.types.Length != 1)
+						Utility.CError(methodNode, ErrorCode.CoerceDoesNotReturnOneType);
+				}
+
+				foreach(BaselineTypeNode typeNode, largeuint idx in methodNode.returnTypes.types)
+					returnTypes[idx] = new TypeReference(cs, typeNode, this.internalScope, false);
+
+				if(methodNode.parameters != null)
+				{
+					foreach(FunctionDeclParameterNode parameterNode in methodNode.parameters.parameters)
+					{
+						local bool isConst = (parameterNode.constFlag != null);
+						local bool isNotNull = (parameterNode.notNullFlag != null);
+						if(isNotNull)
+							isConst = true;
+
+						local MethodParameterObject param = new MethodParameterObject(new TypeReference(cs, parameterNode.type, this.internalScope, false),
+							parameterNode.name, isConst, isNotNull);
+						parameters.Add(param);
+					}
+				}
+
+				if(isIntercept)
+					if( !((parameters.Length == 1 && returnTypes.Length == 0) || (parameters.Length == 0 && returnTypes.Length == 1)) )
+						Utility.CError(methodNode, ErrorCode.InvalidInterceptFormat);
+
+				//local bool isStatic = methodNode.accessDescriptor.staticFlag != null;
+				local bool isVirtual = methodNode.accessDescriptor.virtualFlag != null;
+				local bool isAbstract = methodNode.accessDescriptor.abstractFlag != null;
+				local bool isBranching = methodNode.accessDescriptor.branchingFlag != null;
+				local bool isNative = methodNode.accessDescriptor.nativeFlag != null;
+				local bool isFinal = methodNode.accessDescriptor.finalFlag != null;
+				local bool isConst = methodNode.accessDescriptor.constFlag != null;
+
+				if(isAbstract && !isVirtual)
+					Utility.CError(methodNode, ErrorCode.NonVirtualAbstract);
+
+				if(this.declType == "interface")
+				{
+					if(isStatic)
+						Utility.CError(methodNode, ErrorCode.StaticMethodInInterface);
+					if(isVirtual)
+						Utility.CError(methodNode, ErrorCode.VirtualMethodInInterface);
+					if(isAbstract)
+						Utility.CError(methodNode, ErrorCode.AbstractMethodInInterface);
+
+					isAbstract = true;
+					isVirtual = true;
+				}
+				else if(this.declType == "struct")
+					if(isVirtual)
+						Utility.CError(methodNode, ErrorCode.VirtualMethodInStructure);
+
+
+				if(isAbstract && methodNode.codeBlockCacheID != null)
+					Utility.CError(methodNode, ErrorCode.AbstractMethodHasCode);
+
+				if(!isAbstract && !isNative && methodNode.codeBlockCacheID == null)
+					Utility.CError(methodNode, ErrorCode.MethodMissingCode);
+
+				if(isArrayIntercept && returnTypes.Length != 0)
+					Utility.CError(methodNode, ErrorCode.SetIndexWithReturnValue);
+
+				local ParameterList parameterList = new ParameterList(cs, parameters.ToArray());
+
+
+				local MethodObject method = new MethodObject(cs, methodNameNode, "methods", this, returnTypes, parameterList, visibility, methodNode.declType, methodNode.codeBlockCacheID,
+							isStatic, isVirtual, isAbstract, isNative, isIntercept, isArrayIntercept, isBranching, isFinal, isConst);
+
+				this.methods.Add(method);
+				mg.overloads.Add(method);
+			}
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local bool madeProgress = false;
+
+				this.visibility = Utility.DefaultVisibility(this.uncompiledNode.accessDescriptor.visibility);
+				this.declType = this.uncompiledNode.declType.token.str;
+				this.byVal = (this.uncompiledNode.accessDescriptor.byValFlag != null);
+				this.mustBeRef = (this.uncompiledNode.accessDescriptor.mustBeRefFlag != null);
+				this.isFinal = (this.uncompiledNode.accessDescriptor.finalFlag != null);
+				this.isAbstract = (this.uncompiledNode.accessDescriptor.abstractFlag != null);
+				this.isLocalized = (this.uncompiledNode.accessDescriptor.localizedFlag != null);
+
+				local List:<string> prefixes = new List:<string>();
+
+				local string longName = this.uncompiledNode.name.token.str;
+				local Namespace ns = this.ns.owner as Namespace;
+				while(ns != null)
+				{
+					if(ns.name != null)
+					{
+						prefixes.Add(ns.prefix);
+						longName = ns.name + "." + longName;
+					}
+					ns = ns.owner as Namespace;
+				}
+
+				local string prettyName = longName;
+
+				// Unwind prefixes
+				for(local largeuint idx = prefixes.Length; idx != 0; idx--)
+					longName = prefixes[idx-1] + longName;
+				prefixes = null;
+
+				if(this.templateParameters != null)
+				{
+					prettyName += ":<";
+					longName = "#Tmpl." + longName + ":<";
+					foreach(VType tp, largeuint idx in this.templateParameters)
+					{
+						if(idx != 0)
+						{
+							longName += ",";
+							prettyName += ",";
+						}
+						longName += tp.longName;
+						prettyName += tp.prettyName;
+					}
+					longName += ">";
+					prettyName += ">";
+					this.isFromTemplate = true;
+				}
+
+				this._longName = longName;
+				this.prettyName = prettyName;
+
+				if(!this.isTemplate)
+				{
+					local VType parentClass = null;
+					local List:<InterfaceImplementationObject> interfaces = new List:<InterfaceImplementationObject>();
+
+					if(this.declType == "class" && this.uncompiledNode.parent == null && longName != "Core.Object")
+					{
+						if(!cs.gst.ContainsKey("Core.Object"))
+							return false;	// Core.Object not defined yet
+						parentClass = cs.gst["Core.Object"] as StructuredTypeObject;
+					}
+					else if(this.uncompiledNode.parent != null)
+					{
+						local TypeReference parentClassRef = new TypeReference(cs, this.uncompiledNode.parent, this.scope, false);
+						parentClassRef.Compile(cs);
+
+						if(!parentClassRef.isCompiled)
+							return false;	// Unresolved
+
+						parentClass = parentClassRef.refType;
+					}
+
+					// Check now to avoid partial compilation
+					if(this.uncompiledNode.interfaces != null)
+					{
+						foreach(ExpressionNode iexpr in this.uncompiledNode.interfaces.expressions)
+						{
+							local VType interfaceType = cs.ExpressionToType(iexpr, this.scope, false);
+							if(interfaceType == null)
+								return false;
+
+							if(!(interfaceType is StructuredTypeObject))
+								Utility.CError(iexpr, ErrorCode.ImplementedNonInterface);
+
+							local StructuredTypeObject interfaceST = interfaceType as StructuredTypeObject;
+							if(!interfaceST.isCompiled)
+								return false;		// Can't resolve this yet
+
+							interfaces.Add(new InterfaceImplementationObject(cs, interfaceType as StructuredTypeObject, iexpr));
+						}
+					}
+
+					if(parentClass != null)
+					{
+						if(!(parentClass is StructuredTypeObject))
+							Utility.CError(this.uncompiledNode, ErrorCode.ExtendedNonClass);
+
+						local StructuredTypeObject parentST = parentClass as StructuredTypeObject;
+
+						if(!parentST.isCompiled || !parentST.finalizer.isCompiled)
+							// Can't extend until the type is fully defined with a property layout and vtable
+							return false;
+
+						// Won't have a declType until this is compiled
+						if(parentST.declType != "class")
+							Utility.CError(this.uncompiledNode, ErrorCode.ExtendedNonClass);
+
+						if(parentST.isTemplate)
+							Utility.CError(this.uncompiledNode, ErrorCode.ExtendedTemplate);
+
+						if(this.declType != "class")
+							Utility.CError(this.uncompiledNode, ErrorCode.NonClassExtended);
+
+						if(parentST.isFinal)
+							Utility.CError(this.uncompiledNode, ErrorCode.ExtendedFinalClass);
+
+						this.parentType = parentST;
+
+						// Import everything
+						this.ExtendClass(cs, parentST);
+					}
+
+					// Insert new interfaces
+					local HashSet:<StructuredTypeObject> implementedInterfaces = new HashSet:<StructuredTypeObject>();
+					foreach(InterfaceImplementationObject i in interfaces)
+					{
+						local StructuredTypeObject sti = i.interfaceType;
+
+						if(sti.declType != "interface")
+							Utility.CError(this.uncompiledNode, ErrorCode.ImplementedNonInterface);
+
+						if(implementedInterfaces[sti])
+							Utility.CError(this.uncompiledNode, ErrorCode.DuplicateImplementations, sti.name);
+
+						if(!this.implementedInterfaces[sti])
+						{
+							this.interfaces.Add(i);
+							this.implementedInterfaces.Add(sti);
+						}
+						implementedInterfaces.Add(sti);
+					}
+
+					// Insert new members
+					if(this.uncompiledNode.typeMembers != null)
+					{
+						foreach(AttributeTaggedASTNode decl in this.uncompiledNode.typeMembers.members)
+						{
+							if(decl is DefaultDeclListNode)
+							{
+								foreach(DefaultDeclNode ddecl in (decl as DefaultDeclListNode).defaultDecls)
+									new Initializer(cs, ddecl.expression, this, ddecl.fieldName);
+							}
+							else if(decl is MemberDeclNode)
+							{
+								local MemberDeclNode mdecl = decl as MemberDeclNode;
+								switch(mdecl.declType.token.tokenType)
+								{
+								case(TokenType.RW_Function, TokenType.RW_Coerce, TokenType.RW_Promote):
+									{
+										this.InsertMethod(cs, mdecl);
+									}
+								case(TokenType.RW_Property, TokenType.RW_Resource):
+									{
+										this.InsertProperties(cs, mdecl);
+									}
+								case(TokenType.RW_TypeDef):
+									{
+										this.InsertTypedef(cs, mdecl);
+									}
+								case(TokenType.RW_Class, TokenType.RW_Struct, TokenType.RW_Enum, TokenType.RW_Interface):
+									{
+										this.InsertStructuredType(cs, mdecl);
+									}
+								case(TokenType.RW_Delegate):
+									{
+										local DelegateTypeObject uncompiledType = cs.CreateDelegateType(this.ns, this.internalScope, mdecl);
+										this.ns.InsertUnique(mdecl.name.token.str, uncompiledType, mdecl.name);
+										cs.uncompiled.Add(uncompiledType);
+									}
+								case(default):
+									{
+										Utility.CError(decl, ErrorCode.UnsupportedDeclType, mdecl.declType.token.str);
+									}
+								}
+							}
+							else
+								Utility.CError(decl, ErrorCode.UnsupportedTypeMemberType, decl.printableName);
+						}
+					}
+
+					if(this.uncompiledNode.enumerants != null)
+					{
+						// TODO: HACK, fix
+						local Enumerant.UnderlyingType enumIndex = 0 - 1;
+						local bool isFirst = true;
+						local bool zeroDefined = false;
+
+						local HashSet:<Enumerant.UnderlyingType> usedValues = new HashSet:<Enumerant.UnderlyingType>();
+						local EnumerantObject[] finalEnumerants = new EnumerantObject[this.uncompiledNode.enumerants.enumerants.Length];
+
+						foreach(EnumerationNode e, largeuint eidx in this.uncompiledNode.enumerants.enumerants)
+						{
+							if(e.initializer != null)
+							{
+								local ICObject initializer;
+								try
+								{
+									initializer = cs.CompileExpression(e.initializer, this.internalScope, true);
+								}
+								catch(UnresolvedExpressionSignal ues)
+								{
+									return false;
+								}
+
+								if(!(initializer is Constant))
+									Utility.CError(e.initializer, ErrorCode.EnumInitializerNotInteger);
+
+								local Constant initConst = initializer as Constant;
+								if(initConst.signal != Constant.Signal.Value || initConst.vtams[0].vType.longName != CompilerConstants.enumType())
+									Utility.CError(e.initializer, ErrorCode.EnumInitializerNotInteger);
+
+								// TODO: Proper conversion from integral constant
+								enumIndex = NativeServices.StrToEnumIntegral(initConst.value) as Enumerant.UnderlyingType;
+							}
+							else
+								enumIndex++;
+
+							local Constant constVal = new Constant(this, enumIndex, Constant.Signal.Enum);
+							constVal.enumName = e.name.token.str;
+
+							if(usedValues[enumIndex])
+								Utility.CError(e.name, ErrorCode.DuplicateEnumValue, (enumIndex as string), e.name.token.str);
+							usedValues.Add(enumIndex);
+
+							if(enumIndex == 0)
+								zeroDefined = true;
+
+							finalEnumerants[eidx] = new EnumerantObject(e.name.token.str, enumIndex, constVal, e.name);
+						}
+
+						NativeServices.SortEnumerants(finalEnumerants);
+
+						this.enumerants = finalEnumerants;
+
+						foreach(EnumerantObject fe in finalEnumerants)
+							this.ns.InsertUnique(fe.name, fe.constVal, fe.nameToken);
+
+						if(!zeroDefined)
+							Utility.CError(this.uncompiledNode, ErrorCode.MissingZeroEnumerant);
+					}
+
+					this.uncompiledNode = null;	// Don't need this any more
+				}
+
+				this.finalizer = new TypeFinalizer(cs, this);
+				FinishCompile();
+
+				cs.gst[longName] = this;
+
+				return true;
+			}
+
+			public function void CheckCircularity(ASTNode incriminate)
+			{
+				CheckCircularity(null, incriminate);
+			}
+
+			public function void CheckCircularity(StructuredTypeObject branch, ASTNode incriminate)
+			{
+				if(branch == this)
+					Utility.CError(incriminate, ErrorCode.VerifiedCircularDependency, this.prettyName);
+
+				if(branch == null)
+				{
+					branch = this;
+					if(branch.declType != "struct" && branch.declType != "class")
+						return;
+				}
+
+				if(branch.parentType != null)
+					CheckCircularity(branch.parentType, incriminate);
+
+				foreach(PropertyObject p in branch.properties)
+				{
+					local VType pt = p.typeOf.refType;
+					if(pt is StructuredTypeObject)
+					{
+						local StructuredTypeObject pst = pt as StructuredTypeObject;
+						if(pst.declType == "struct")
+							CheckCircularity(pst, incriminate);
+					}
+				}
+			}
+
+			public function void CheckByVals(ASTNode incriminate)
+			{
+				if(this.mustBeRef)
+					Utility.CError(incriminate, ErrorCode.UnalignableByVal);
+
+				foreach(PropertyObject p in this.properties)
+				{
+					local VType pt = p.typeOf.refType;
+					if(pt is StructuredTypeObject)
+					{
+						local StructuredTypeObject pst = pt as StructuredTypeObject;
+						if(pst.declType == "struct")
+							pst.CheckByVals(incriminate);
+					}
+				}
+			}
+
+			public final intercept function bool IsObjectReference()
+			{
+				return (this.declType == "class" || this.declType == "interface");
+			}
+
+			public final intercept function bool IsRefStruct()
+			{
+				return (this.declType == "struct" && !this.byVal);
+			}
+
+			public intercept function Visibility visibility()
+			{
+				return _visibility;
+			}
+
+			public intercept function void visibility(const Visibility v)
+			{
+				_visibility = v;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "structured type";
+			}
+		}
+	}
+}

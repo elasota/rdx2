@@ -1,0 +1,12 @@
+return {
+	exportPath = "src/exported",
+	midcodePath = "rdxmidcode",
+	exportNamespace = "RDXInterface",
+	rdxPath = "../rdx",
+	clusterPath = "rdxmyapp_cluster",
+	clusterSize = 64,
+	pccmGluePath = "rdxmyapp_pccm_glue",
+	pccmGlueName = "RDX_MyApp_PCCMGlue",
+	pluginPath = "rdxmyapp_plugin",
+	pluginName = "RDX_MyApp_PluginGlue",
+}

@@ -1,0 +1,220 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		// Guarantee outer blocks
+		public class GuaranteeOuterBlock extends CodeBlock
+		{
+			private property string _labelPrefix;
+			private property List:<string> _codePaths;
+			private property List:<string> _codePathEscapes;	// Label to jump to after running the guaranteed statements
+			private property Dictionary:<string,largeuint> _labelToCodePath;
+			private property largeuint _guaranteeLocals;
+			private property LocalVariable _carriedExceptionLocal;
+			private property LocalVariable _codePathLocal;
+			private property string _returnPath;
+			private property string _defaultPath;
+			private property LocalVariable[] _returnValueHolders;
+
+			public function void Initialize(CodeEmission.CodeEmissionState ces, Namespace ownerNamespace, Scope ownerScope, largeuint initialLocalIndex)
+			{
+				(this as CodeBlock).explicit:Initialize(ownerNamespace, ownerScope, initialLocalIndex);
+				this._labelPrefix = ces.CreateLabel();
+				this._returnPath = this._labelPrefix + "_greturn";
+				this._defaultPath = this._labelPrefix + "_gdefaultpath";
+				this._codePaths = new List:<string>();
+				_codePaths.Add(_returnPath);
+				_codePaths.Add(_defaultPath);
+				this._codePathEscapes = new List:<string>();
+				this._codePathEscapes.Add(null);
+				this._codePathEscapes.Add(null);
+				this._labelToCodePath = new Dictionary:<string,largeuint>();
+				this._guaranteeLocals = 0;
+			}
+
+			public intercept function LocalVariable const[] ReturnValueHolders()
+			{
+				return _returnValueHolders;
+			}
+
+			public intercept function string ReturnPath()
+			{
+				return _returnPath;
+			}
+
+			public intercept function string LabelPrefix()
+			{
+				return _labelPrefix;
+			}
+
+			public intercept function string DefaultPath()
+			{
+				return _defaultPath;
+			}
+
+			public intercept function LocalVariable CodePathLocal()
+			{
+				return _codePathLocal;
+			}
+
+			public intercept function LocalVariable CarriedExceptionLocal()
+			{
+				return _carriedExceptionLocal;
+			}
+
+			public intercept function List:<string> CodePaths()
+			{
+				return _codePaths;
+			}
+
+			public function GuaranteeInnerBlock StartGuaranteeInnerBlock(CompilerState cs, CodeEmission.CodeEmissionState ces)
+			{
+				local string lbl = this._labelPrefix;
+				local string catchLabel = lbl + "_gcatch";
+				local string endTryLabel = lbl + "_gendtry";
+				local MethodObject method = Utility.BlockMethod(this);
+
+				local GuaranteeOuterBlock ownerGuarantee = this.FindGuaranteeingBlock();
+
+				if(ownerGuarantee == null)
+				{
+					_carriedExceptionLocal = new LocalVariable(method, cs.gst["Core.Exception"] as VType, false, false);
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.AllocLocal, res1 = "Core.Exception", str1 = "guarantee carried exception" } );
+					this.CreateLocal(ces, _carriedExceptionLocal);
+
+					_codePathLocal = new LocalVariable(method, cs.gst["Core.int"] as VType, false, false);
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.AllocLocal, res1 = "Core.int", str1 = "guarantee code path" } );
+					this.CreateLocal(ces, _codePathLocal);
+
+					_guaranteeLocals = 2;
+
+					_returnValueHolders = new LocalVariable[method.returnTypes.typeReferences.Length];
+
+					foreach(TypeReference ref, largeuint idx in method.returnTypes.typeReferences)
+					{
+						local VType returnType = ref.refType;
+						local LocalVariable rvHolder = new LocalVariable(method, returnType, false, false);
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.AllocLocal, res1 = "Core.int", str1 = "guarantee return value " + idx } );
+						this.CreateLocal(ces, rvHolder);
+						_returnValueHolders[idx] = rvHolder;
+						_guaranteeLocals++;
+					}
+				}
+				else
+				{
+					_carriedExceptionLocal = ownerGuarantee._carriedExceptionLocal;
+					_codePathLocal = ownerGuarantee._codePathLocal;
+					_returnValueHolders = ownerGuarantee._returnValueHolders;
+				}
+
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Try, str1 = catchLabel, str2 = endTryLabel } );
+				ces.Discharge();
+
+				local GuaranteeInnerBlock innerBlock = new GuaranteeInnerBlock(null, this, this._localIndex);
+
+				return innerBlock;
+			}
+
+
+			public function string AddLabel(string label)
+			{
+				local largeuint codePathIdx;
+				if(_labelToCodePath.ContainsKey(label))
+					codePathIdx = _labelToCodePath[label];
+				else
+				{
+					_codePaths.Add(_labelPrefix + "_gpath_" + label);
+					_codePathEscapes.Add(label);
+					codePathIdx = _codePaths.Length;
+					_labelToCodePath[label] = codePathIdx;
+				}
+				local string codePath = _codePaths[codePathIdx - 1];
+				Utility.Assert(codePath != null);
+				return codePath;
+			}
+
+			public function void Close(CodeEmission.CodeEmissionState ces)
+			{
+				local string lbl = _labelPrefix;
+				ces.Discharge();
+				local GuaranteeOuterBlock owner = this.FindGuaranteeingBlock();
+
+				// Carry exceptions
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = _codePathLocal.stackIndex } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+				ces.AddConstantInstruction("Core.int", CompilerConstants.GuaranteeBlocks.EXCEPTION(), Constant.Signal.Value);
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.JumpIfNotEqual, str1 = lbl + "_gnocarry", str2 = lbl + "_gcarry" } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = lbl + "_gcarry" } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = _carriedExceptionLocal.stackIndex } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Throw } );
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = lbl + "_gnocarry" } );
+
+				// Emit code exit paths
+				foreach(string path, largeuint pathIdx in _codePaths)
+				{
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.CheckPathUsage, str1 = path + "_gpathunused", str2 = path } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = _codePathLocal.stackIndex } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Load } );
+					ces.AddConstantInstruction("Core.int", (pathIdx + 1) as string, Constant.Signal.Value);
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.JumpIfNotEqual, str1 = path + "_gpathunused", str2 = path + "_gpathtaken" } );
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = path + "_gpathtaken" } );
+					if(path == _returnPath)
+					{
+						// Special code for return path
+						if(owner != null)
+						{
+							// Has an owner, the value holders should be populated
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = owner._returnPath } );
+						}
+						else
+						{
+							// No owner, exit the function
+							foreach(LocalVariable rvLocal in _returnValueHolders)
+								ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.LocalRef, int1 = rvLocal.stackIndex } );
+
+							ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Return, int1 = _returnValueHolders.Length } );
+						}
+					}
+					else if(path == _defaultPath)
+						ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Jump, str1 = this._defaultPath } );
+					else
+						ces.EmitAliasableJump( this, _codePathEscapes[pathIdx]);
+
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = path + "_gpathunused" } );
+				}
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.DeadCode } );
+
+				for(local largeuint i=1;i<_guaranteeLocals;i++)
+					ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.RemoveLocal } );
+
+				ces.AddInstruction(new CodeEmission.PInstr { op = CodeEmission.POp.Label, str1 = _defaultPath } );
+				ces.Discharge();
+			}
+
+			public function string AddLabelToGuarantee(string label)
+			{
+				local largeuint codePathIdx;
+				local string cPath;
+				if(!_labelToCodePath.ContainsKey(label))
+				{
+					codePathIdx = _codePaths.Length;
+					cPath = _labelPrefix + "_gpath_" + label;
+					_codePaths.Add(cPath);
+					_codePathEscapes.Add(label);
+					_labelToCodePath[label] = codePathIdx;
+				}
+				else
+				{
+					codePathIdx = _labelToCodePath[label];
+					cPath = _codePaths[codePathIdx];
+				}
+				return cPath;
+			}
+		}
+	}
+}

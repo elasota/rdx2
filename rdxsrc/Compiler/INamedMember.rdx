@@ -1,0 +1,15 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface INamedMember
+		{
+			public intercept function string name();
+		}
+	}
+}

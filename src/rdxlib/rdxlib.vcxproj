@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7426EAC9-8FC9-4C3D-9A80-E179163A5444}</ProjectGuid>
+    <RootNamespace>rdxlib</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Debug.props" />
+    <Import Project="..\DynLib.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Release.props" />
+    <Import Project="..\DynLib.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)_dbg</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <StringPooling>true</StringPooling>
+      <PreprocessorDefinitions>RDX_BUILD_COREMODULE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <PreprocessorDefinitions>RDX_BUILD_COREMODULE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\lz4\lz4.c" />
+    <ClCompile Include="..\rdx\rdx.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_atof.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_boolserializer.cpp" />
+    <ClCompile Include="..\rdx\rdx_builtins.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_constants.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_containers.cpp" />
+    <ClCompile Include="..\rdx\rdx_coretypes.cpp" />
+    <ClCompile Include="..\rdx\rdx_dynlib.cpp" />
+    <ClCompile Include="..\rdx\rdx_ilcomp.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_ilcomp2.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_ilcomp3.cpp" />
+    <ClCompile Include="..\rdx\rdx_ildecompile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_interpret.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_interpret2.cpp" />
+    <ClCompile Include="..\rdx\rdx_intrinsics.cpp" />
+    <ClCompile Include="..\rdx\rdx_isolationtext.cpp">
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</PreprocessToFile>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_method.cpp" />
+    <ClCompile Include="..\rdx\rdx_nullcodeprovider.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_objectloader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_objectmanager.cpp" />
+    <ClCompile Include="..\rdx\rdx_ilopcodes.cpp" />
+    <ClCompile Include="..\rdx\rdx_pccm_env.cpp" />
+    <ClCompile Include="..\rdx\rdx_plugin_numerictypes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_precompiled.cpp" />
+    <ClCompile Include="..\rdx\rdx_requiredtypes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_runtime.cpp" />
+    <ClCompile Include="..\rdx\rdx_placeholders.cpp" />
+    <ClCompile Include="..\rdx\rdx_serialize.cpp">
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_shellexec.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_sourceexport.cpp" />
+    <ClCompile Include="..\rdx\rdx_string.cpp" />
+    <ClCompile Include="..\rdx\rdx_stringserializer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_structuredtype.cpp" />
+    <ClCompile Include="..\rdx\rdx_thread_win32.cpp" />
+    <ClCompile Include="..\rdx\rdx_typeinfoimpls.cpp" />
+    <ClCompile Include="..\rdx\rdx_unified.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_utility.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_varying.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\rdx\rdx_zonepolicy.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\rdx\rdx.h" />
+    <ClInclude Include="..\rdx\rdx_aliasing.hpp" />
+    <ClInclude Include="..\rdx\rdx_api.hpp" />
+    <ClInclude Include="..\rdx\rdx_appservices.hpp" />
+    <ClInclude Include="..\rdx\rdx_arraydefprototype.hpp" />
+    <ClInclude Include="..\rdx\rdx_atomic.hpp" />
+    <ClInclude Include="..\rdx\rdx_atomic_win32.hpp" />
+    <ClInclude Include="..\rdx\rdx_atomic_win32_msvc.hpp" />
+    <ClInclude Include="..\rdx\rdx_atomic_x86_msvc.hpp" />
+    <ClInclude Include="..\rdx\rdx_basictypes.hpp" />
+    <ClInclude Include="..\rdx\rdx_blockcopy.hpp" />
+    <ClInclude Include="..\rdx\rdx_breakcause.hpp" />
+    <ClInclude Include="..\rdx\rdx_builtindomain.hpp" />
+    <ClInclude Include="..\rdx\rdx_builtins.hpp" />
+    <ClInclude Include="..\rdx\rdx_callbacks.hpp" />
+    <ClInclude Include="..\rdx\rdx_conditionaltype.hpp" />
+    <ClInclude Include="..\rdx\rdx_constants.hpp" />
+    <ClInclude Include="..\rdx\rdx_containertracking.h" />
+    <ClInclude Include="..\rdx\rdx_coretypeattribs.hpp" />
+    <ClInclude Include="..\rdx\rdx_coretypes.hpp" />
+    <ClInclude Include="..\rdx\rdx_cpp_abi.hpp" />
+    <ClInclude Include="..\rdx\rdx_cval.hpp" />
+    <ClInclude Include="..\rdx\rdx_debugtypeinspector.hpp" />
+    <ClInclude Include="..\rdx\rdx_errorcodes.hpp" />
+    <ClInclude Include="..\rdx\rdx_gcinfo.hpp" />
+    <ClInclude Include="..\rdx\rdx_gcslots.hpp" />
+    <ClInclude Include="..\rdx\rdx_guid.hpp" />
+    <ClInclude Include="..\rdx\rdx_hashmap.hpp" />
+    <ClInclude Include="..\rdx\rdx_ilcomp.hpp" />
+    <ClInclude Include="..\rdx\rdx_ilopcodes.hpp" />
+    <ClInclude Include="..\rdx\rdx_interpret.hpp" />
+    <ClInclude Include="..\rdx\rdx_interpret_internal.hpp" />
+    <ClInclude Include="..\rdx\rdx_interpret_opcodes.hpp" />
+    <ClInclude Include="..\rdx\rdx_intrinsics.hpp" />
+    <ClInclude Include="..\rdx\rdx_io.hpp" />
+    <ClInclude Include="..\rdx\rdx_langutils.hpp" />
+    <ClInclude Include="..\rdx\rdx_loadshell.hpp" />
+    <ClInclude Include="..\rdx\rdx_longflow.hpp" />
+    <ClInclude Include="..\rdx\rdx_lut.hpp" />
+    <ClInclude Include="..\rdx\rdx_marshal.hpp" />
+    <ClInclude Include="..\rdx\rdx_murmur2.hpp" />
+    <ClInclude Include="..\rdx\rdx_murmur3.hpp" />
+    <ClInclude Include="..\rdx\rdx_namegenerator.hpp" />
+    <ClInclude Include="..\rdx\rdx_nullcodeprovider.hpp" />
+    <ClInclude Include="..\rdx\rdx_objectguid.hpp" />
+    <ClInclude Include="..\rdx\rdx_objectloader.hpp" />
+    <ClInclude Include="..\rdx\rdx_objectmanagement.hpp" />
+    <ClInclude Include="..\rdx\rdx_objectmanagement_code.hpp" />
+    <ClInclude Include="..\rdx\rdx_objectmanagement_internal.hpp" />
+    <ClInclude Include="..\rdx\rdx_opcodes.hpp" />
+    <ClInclude Include="..\rdx\rdx_operators.hpp" />
+    <ClInclude Include="..\rdx\rdx_package.hpp" />
+    <ClInclude Include="..\rdx\rdx_packagereference.hpp" />
+    <ClInclude Include="..\rdx\rdx_packagesymbolloc.hpp" />
+    <ClInclude Include="..\rdx\rdx_pccm.hpp" />
+    <ClInclude Include="..\rdx\rdx_pccm_api.hpp" />
+    <ClInclude Include="..\rdx\rdx_pccm_callback.hpp" />
+    <ClInclude Include="..\rdx\rdx_pccm_env.hpp" />
+    <ClInclude Include="..\rdx\rdx_platform.hpp" />
+    <ClInclude Include="..\rdx\rdx_plugin.hpp" />
+    <ClInclude Include="..\rdx\rdx_pragmas.hpp" />
+    <ClInclude Include="..\rdx\rdx_precompiled.hpp" />
+    <ClInclude Include="..\rdx\rdx_processing.hpp" />
+    <ClInclude Include="..\rdx\rdx_programmability.hpp" />
+    <ClInclude Include="..\rdx\rdx_reftypealiases.hpp" />
+    <ClInclude Include="..\rdx\rdx_reftypecode_baseref.hpp" />
+    <ClInclude Include="..\rdx\rdx_reftypecode_ref.hpp" />
+    <ClInclude Include="..\rdx\rdx_reftypecode_rtref.hpp" />
+    <ClInclude Include="..\rdx\rdx_reftypedefs.hpp" />
+    <ClInclude Include="..\rdx\rdx_runtime.hpp" />
+    <ClInclude Include="..\rdx\rdx_runtimestackvalue.hpp" />
+    <ClInclude Include="..\rdx\rdx_serializationtag.hpp" />
+    <ClInclude Include="..\rdx\rdx_signalproxy.hpp" />
+    <ClInclude Include="..\rdx\rdx_lutdecls.hpp" />
+    <ClInclude Include="..\rdx\rdx_steal.hpp" />
+    <ClInclude Include="..\rdx\rdx_superresolver.hpp" />
+    <ClInclude Include="..\rdx\rdx_threading.hpp" />
+    <ClInclude Include="..\rdx\rdx_typeprocessor.hpp" />
+    <ClInclude Include="..\rdx\rdx_typerelationships.hpp" />
+    <ClInclude Include="..\rdx\rdx_utility.hpp" />
+    <ClInclude Include="..\rdx\rdx_varying.hpp" />
+    <ClInclude Include="..\rdx\rdx_wrapproc.hpp" />
+    <ClInclude Include="..\rdx\rdx_zonepolicy.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\rdxutillib\rdxutillib.vcxproj">
+      <Project>{76b0a817-9289-43cb-b521-20aefa7fdb60}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\rdx\rdx_reftypecode.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

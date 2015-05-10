@@ -1,0 +1,44 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class MVTemplate
+		{
+			public property List:<VTAM> vtams;
+			public property List:<IValueExpression> expressions;
+
+			public function void Initialize()
+			{
+				vtams = new List:<VTAM>();
+				expressions = new List:<IValueExpression>();
+			}
+
+			public function MultipleValues ToMV()
+			{
+				return new MultipleValues(expressions.ToArray(), new VTAMCollection(vtams));
+			}
+
+			public function void Append(IValueExpression expr)
+			{
+				expressions.Add(expr);
+				foreach(VTAM vtam in expr.vtams)
+					vtams.Add(vtam);
+			}
+
+			public intercept function largeuint NumVTAMs()
+			{
+				return vtams.Length;
+			}
+
+			public intercept function largeuint NumExpressions()
+			{
+				return expressions.Length;
+			}
+		}
+	}
+}

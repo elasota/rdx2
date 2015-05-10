@@ -1,0 +1,48 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		// InstanciatedNamespaces are namespaces that are referenced by an absolute namespace path
+		public class InstanciatedNamespace extends Scope
+		{
+			private property List:<Scope> _imports;
+
+			public property Namespace ns;
+			public property StructuredTypeObject boundType;
+
+			public function void Initialize(Scope owner, Namespace ns, StructuredTypeObject boundType)
+			{
+				(this as Scope).explicit:Initialize(owner);
+				this.ns = ns;
+				this.boundType = boundType;
+				_imports = new List:<Scope>();
+			}
+
+			public virtual function ICObject Lookup(string symbol, ASTNode incriminate)
+			{
+				if(this.ns.symbols.ContainsKey(symbol))
+					return this.ns.symbols[symbol];
+
+				foreach(Scope i in _imports)
+				{
+					local ICObject v = i.Lookup(symbol, incriminate);
+					if(v != null)
+						return v;
+				}
+				if(owner != null)
+					return owner.Lookup(symbol, incriminate);
+				return null;
+			}
+
+			public intercept function List:<Scope> imports()
+			{
+				return _imports;
+			}
+		}
+	}
+}

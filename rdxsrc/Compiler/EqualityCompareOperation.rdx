@@ -1,0 +1,48 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class EqualityCompareOperation extends ValueExpression implements IEmittableLogical
+		{
+			public property IValueExpression leftExpr;
+			public property IValueExpression rightExpr;
+			public property string operator;
+
+			public function void Initialize(IValueExpression leftExpr, IValueExpression rightExpr, const VTAMCollection vtams, string operator)
+			{
+				this.leftExpr = leftExpr;
+				this.rightExpr = rightExpr;
+				this._vtams = vtams;
+				this.operator = operator;
+			}
+
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel)
+			{
+				CodeEmission.Emit.EmitValues(cs, ces, this.leftExpr, true);
+				CodeEmission.Emit.EmitValues(cs, ces, this.rightExpr, true);
+
+				local CodeEmission.POp instrOp;
+				if(this.operator == "__eq")
+					instrOp = CodeEmission.POp.JumpIfEqual;
+				else if(this.operator == "__ne")
+					instrOp = CodeEmission.POp.JumpIfNotEqual;
+				else
+					Utility.Assert(false);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = instrOp, str1 = trueLabel, str2 = falseLabel } );
+				ces.Pop(2);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "equality compare operation";
+			}
+		}
+	}
+}
+

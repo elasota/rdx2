@@ -1,0 +1,16 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface IValueExpression
+		{
+			public intercept function VTAMCollection vtams();
+			public intercept function string printableName();
+		}
+	}
+}

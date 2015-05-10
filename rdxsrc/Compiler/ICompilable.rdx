@@ -1,0 +1,19 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface ICompilable
+		{
+			public function void FinishCompile();
+			public function bool Compile(CompilerState cs);
+			public intercept function bool isCompiled();
+			public intercept function string longName();
+			public intercept function ASTNode incriminateNode();
+		}
+	}
+}

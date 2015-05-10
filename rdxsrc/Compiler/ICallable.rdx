@@ -1,0 +1,20 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface ICallable
+		{
+			public intercept function bool isAbstract();
+			public intercept function TokenNode name();
+			public intercept function TypeTuple returnTypes();
+			public intercept function ParameterList actualParameterList();
+			public intercept function ParameterList parameterList();
+			public intercept function largeuint thisParameterIndex();
+		}
+	}
+}

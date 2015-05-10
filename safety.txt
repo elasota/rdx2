@@ -1,0 +1,32 @@
+Hand-constructed RuntimePointers will crash the runtime if passed as a parameter or if you try to serialize or write to them.  Use RuntimePointer::From to get a safe value which is correctly bound to an object.
+
+Several important things are not traced by the garbage collector and should be attached to a tracing construct (i.e. a CRef) before disposing of the call context or doing anything that could cause a global operation block in the runtime.  CRef manipulation, including destruction, will NOT allow the thread to be blocked by another thread initiating garbage collection.  Things that are not traced include:
+- Object references returned by invokes are not traced
+- Return values in a native callback are not traced until the function returns
+- Parameters in a method precall are not traceable until the method has been successfully invoked.  Invocation can cause a wait on the GC, so releasing CRefs should wait until after invocation.
+- Return values in a method precall are not traceable at all
+
+
+Parameters and return values in a precall are not traced.  You should ensure that objects you assign to precall marshaling space is traced through other constructs such as a CRef or another traced object.
+
+Remember that while the language does not have a boxing mechanism, the runtime does permit boxed values.  Anything that can be passed as a value can potentially be passed via Core.Object from a resource or boxed value, so be careful using ContainerTypes to determine the size of a value.  TypedRuntimePointer/varying values will always pass as the type that the expression passing the value was, not the value of the object, which can be used to determine if it was passed as a reference or value.
+
+Precalls should only be done on threads that have exited or have invoked a native call.  Precalling in a suspended or exceptional thread is unsafe.
+
+
+DEBUGGING:
+
+Thread::Trace will return a RuntimeTrace that you can use to trace the current call stack.
+
+
+SERIALIZING THREADS IN A NATIVE CALL:
+
+Serialization is a global operation and can block a thread any time a global operation is attempted.  This may cause threads to block during a native call.  To avoid unpredictable behavior, threads currently in a native function are serialized with the point of execution just before the native call.
+
+This can present a problem if SMP is enabled, since the native function may be in the middle of operations.  Recommended practices are:
+   - If a function should not act the same in multiple rounds, modify a parameter's value prior to doing anything that may serialize.  The parameter will be serialized as its new value and the resumed call will occur with the new value set.
+   - Use CRefs to hold temporary values and commit changes to the state after operations that may block the thread
+
+Threads that enter a native call directly will be considered inactive when deserialized.
+
+Threads that reenter via a native call can't be deserialized.

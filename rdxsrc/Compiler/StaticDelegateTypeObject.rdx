@@ -1,0 +1,36 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class StaticDelegateTypeObject extends DelegateTypeObject
+		{
+			public property Namespace ns;
+			public property ASTNode uncompiledNode;
+
+			public function void Initialize(TokenNode name, ParameterList parameters, TypeTuple returnTypes, Namespace ns, ASTNode uncompiledNode, bool isStatic,
+				ParameterList actualParameterList, ASTNode incriminateNode)
+			{
+				(this as DelegateTypeObject).explicit:Initialize();
+
+				this._name = name;
+				this._parameterList = parameters;
+				this._returnTypes = returnTypes;
+				this.ns = ns;
+				this.uncompiledNode = uncompiledNode;
+				this.isStatic = isStatic;
+				this._actualParameterList = actualParameterList;
+				this._incriminateNode = incriminateNode;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "static delegate type object";
+			}
+		}
+	}
+}

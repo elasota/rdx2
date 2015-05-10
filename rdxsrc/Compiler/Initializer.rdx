@@ -1,0 +1,122 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class Initializer extends SimpleCompilable
+		{
+			public property StructuredTypeObject ownerType;
+			public property TokenNode ownerMemberName;
+			public property INamedMember ownerMember;
+			public property string defaultValue;
+			public property HashSet:<string> defaultDependencySet;
+			public property List:<largeuint> defaultDimensions;
+			public property ExpressionNode uncompiledNode;
+
+			public function void Initialize(CompilerState cs, ExpressionNode node, StructuredTypeObject ownerType, TokenNode ownerMemberName)
+			{
+				this.ownerType = ownerType;
+				this.ownerMemberName = ownerMemberName;
+				this.ownerMember = null;
+				this.uncompiledNode = node;
+				this._incriminateNode = node;
+				cs.uncompiled.Add(this);
+			}
+
+
+			public virtual function bool Compile(CompilerState cs)
+			{
+				local bool isAnonymous;
+
+				local IValueExpression expr;
+
+				if(!this.ownerType.isCompiled && !this.ownerType.finalizer.isCompiled)
+					return false;
+
+				local string ownerNameStr = this.ownerMemberName.token.str;
+				if(!this.ownerType.ns.symbols.ContainsKey(ownerNameStr))
+					Utility.CError(this.ownerMemberName, ErrorCode.UnresolvedMemberInitializer, ownerNameStr);
+
+				local ICObject ownerMemberObj = this.ownerType.ns.symbols[ownerNameStr];
+
+				local TypeReference ownerMemberType;
+				if(ownerMemberObj is PropertyObject)
+					ownerMemberType = (ownerMemberObj as PropertyObject).typeOf;
+				else if(ownerMemberObj is StaticInstance)
+					ownerMemberType = (ownerMemberObj as StaticInstance).typeOf;
+				else
+					Utility.CError(this.ownerMemberName, ErrorCode.UninitializableMember);
+
+				local VType vType = ownerMemberType.refType;
+
+				if(!vType.isCompiled)
+					return false;
+
+				local VType exprOriginalType;
+				try
+				{
+					expr = cs.CompileExpression(this.uncompiledNode, this.ownerType.internalScope, true).ToValues(this.uncompiledNode);
+					expr = CompilerState.AdjustValueCount(expr, this.uncompiledNode, 1);
+					exprOriginalType = expr.vtams[0].vType;
+					expr = CompilerState.ConvertExpression(this.uncompiledNode, expr, new VTAMCollection(new VTAM { vType = vType, accessMode = AccessMode.Any }) );
+				}
+				catch(UnresolvedExpressionSignal ues)
+				{
+					return false;
+				}
+
+				local bool requireRef;
+				local string baseName;
+				if(vType.IsObjectReference)
+					requireRef = true;
+
+				local uint firstIndent = 1;
+				if(ownerMemberObj is StaticInstance)
+				{
+					local StaticInstance ownerSI = ownerMemberObj as StaticInstance;
+					firstIndent = 0;
+					requireRef = false;
+					ownerSI.initializer = this;
+					baseName = ownerSI.longName;
+					isAnonymous = ownerSI.isAnonymous;
+
+					// Static instance types must be exact matches
+					if(vType != exprOriginalType)
+						Utility.CError(this.ownerMemberName, ErrorCode.ResourceInstanceIncompatible);
+				}
+				else if(ownerMemberObj is PropertyObject)
+				{
+					local PropertyObject ownerP = ownerMemberObj as PropertyObject;
+					if(this.ownerType.initializersSet.ContainsKey(ownerMember.name))
+					{
+						local Initializer init = this.ownerType.initializersSet[ownerMember.name];
+						if(init.ownerType == this.ownerType)
+							Utility.CError(this.uncompiledNode, ErrorCode.MemberAlreadyHasDefault, ownerP.name);
+					}
+					this.ownerType.initializersSet[ownerMember.name] = this;
+					this.ownerType.initializers.Add(this);
+					baseName = this.ownerType.longName + "/default." + ownerMember.name;
+				}
+
+				this.defaultDependencySet = new HashSet:<string>();
+				this.defaultDimensions = new List:<largeuint>();
+				this.defaultValue = cs.GetInitializationValue(vType, expr, requireRef, firstIndent, baseName, this.defaultDependencySet, this.defaultDimensions, isAnonymous, this.uncompiledNode);
+				this.ownerMember = ownerMember;
+
+				this.uncompiledNode = null;
+				FinishCompile();
+
+				return true;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "initializer";
+			}
+		}
+	}
+}

@@ -1,0 +1,66 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		namespace CodeEmission
+		{
+			// Pseudo-ops, not all of these are real ops, but they must match the internal opcode list
+			public enum POp
+			{
+				StartBarrier,
+				EndBarrier,
+				Throw,
+				Try,
+				Catch,
+				TryCatch,
+				Jump,
+				JumpIf,
+				JumpIfNot,
+				JumpIfTrue,
+				JumpIfFalse,
+				JumpIfEqual,
+				JumpIfNotEqual,
+				Call,
+				CallVirtual,
+				CallDelegate,
+				AllocLocal,
+				CreateLocal,
+				RemoveLocal,
+				PushEmpty,
+				NewInstance,
+				NewInstanceSet,
+				Null,
+				PinLocal,
+				ToVarying,
+				ArrayIndex,
+				Property,
+				Move,
+				Load,
+				Clone,
+				Pop,
+				Cast,
+				LocalRef,
+				Return,
+				Hash,
+				Res,
+				Constant,
+				ConstantStr,
+				Switch,
+				IterateArray,
+
+				// Pseudo-ops
+				Case,
+				EnablePath,
+				DeadCode,
+				Label,
+				CheckPathUsage,
+				Terminate,
+				Invalid,
+			}
+		}
+	}
+}

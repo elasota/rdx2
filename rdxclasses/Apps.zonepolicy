@@ -1,0 +1,41 @@
+import 'Core.RDX.Zone'
+import 'Core.RDX.ArrayOfType'
+
+def 'AllZones' anonymous '#Core.RDX.Zone[C]' 3
+{
+	res 'AppsZone',
+	res 'RDXZone',
+	res 'RootZone',
+}
+
+def 'AppsZone' anonymous 'Core.RDX.Zone'
+{
+	namespacePrefix : 'Apps.',
+	visibleZones : res 'AllZones',
+	canContainMethods : true,
+}
+
+def 'RDXZone' anonymous 'Core.RDX.Zone'
+{
+	namespacePrefix : 'RDX.',
+	visibleZones : res 'AllZones',
+	canContainMethods : true,
+}
+
+def 'RootZone' anonymous 'Core.RDX.Zone'
+{
+	namespacePrefix : '',
+	visibleZones : res 'RootZoneVisibility',
+}
+
+def 'RootZoneVisibility' anonymous '#Core.RDX.Zone[C]' 1
+{
+	res 'RootZone',
+}
+
+def '#Core.RDX.Zone[C]' 'Core.RDX.ArrayOfType'
+{
+	type : res 'Core.RDX.Zone',
+	numDimensions : 1,
+	isConstant: true,
+}

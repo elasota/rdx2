@@ -1,0 +1,36 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class CheckCast extends ValueExpression implements IEmittableLogical
+		{
+			public property IValueExpression expression;
+			public property VType checkType;
+
+			public function void Initialize(IValueExpression expr, VType checkType, const VTAMCollection vtams)
+			{
+				this.expression = expr;
+				this.checkType = checkType;
+				this._vtams = vtams;
+			}
+
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel)
+			{
+				CodeEmission.Emit.EmitValues(cs, ces, this.expression, false);
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Res, res1 = this.checkType.longName } );
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.JumpIf, res1 = "Core.Object/methods/CanConvertTo(notnull Core.RDX.Type)", str1 = trueLabel, str2 = falseLabel } );
+				ces.Pop(1);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "check cast";
+			}
+		}
+	}
+}

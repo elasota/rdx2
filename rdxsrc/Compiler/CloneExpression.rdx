@@ -1,0 +1,35 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class CloneExpression extends ValueExpression implements IEmittable
+		{
+			public property IValueExpression expression;
+
+			public function void Initialize(IValueExpression expression, const VTAMCollection vtams)
+			{
+				this.expression = expression;
+				this._vtams = vtams;
+			}
+
+			public function void EmitValues(CompilerState cs, CodeEmission.CodeEmissionState ces, bool allowLocals)
+			{
+				if(this.expression != null)
+					CodeEmission.Emit.EmitValues(cs, ces, this.expression, allowLocals);
+
+				ces.AddInstruction( new CodeEmission.PInstr{ op = CodeEmission.POp.Clone, int1 = 0, int2 = 1 } );
+				ces.Clone(0, 1);
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "clone";
+			}
+		}
+	}
+}

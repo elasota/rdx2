@@ -1,0 +1,23 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public final class PlaceholderRValue extends ValueExpression
+		{
+			public function void Initialize(VType vt)
+			{
+				_vtams = new VTAMCollection(new VTAM { vType = vt, accessMode = (vt.IsRefStruct) ? AccessMode.CP : AccessMode.R });
+			}
+
+			public virtual intercept function string printableName()
+			{
+				return "placeholder rvalue";
+			}
+		}
+	}
+}

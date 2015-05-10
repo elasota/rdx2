@@ -1,0 +1,406 @@
+/*
+ * Copyright (C) 2011-2013 Eric Lasota
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+namespace Core
+{
+	[cpp name("::rdxShort") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct short
+	{
+		public native promote largeint;
+		public native promote long;
+		public native promote int;
+		public native promote ulong;
+		public native promote largeuint;
+		public native promote uint;
+		public native coerce ushort;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native promote double;
+		public native coerce float;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxUShort") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct ushort
+	{
+		public native promote largeint;
+		public native promote long;
+		public native promote int;
+		public native coerce short;
+		public native promote largeuint;
+		public native promote ulong;
+		public native promote uint;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native promote double;
+		public native promote float;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxInt") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct int
+	{
+		public native promote largeint;
+		public native promote long;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce ushort;
+		public native coerce byte;
+
+		public native promote double;
+		public native coerce float;
+
+		public native promote string;
+
+		public native function int __add(int v);
+		public native function int __sub(int v);
+		public native function int __mul(int v);
+		public native function int __div(int v);
+		public native function int __mod(int v);
+		public native function int __neg();
+		public branching native function bool __gt(int v);
+		public branching native function bool __ge(int v);
+		public branching native function bool __lt(int v);
+		public branching native function bool __le(int v);
+		public branching native function bool __eq(int v);
+		public branching native function bool __ne(int v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxHashValue") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct hashcode
+	{
+		public native function largeuint ToLargeUInt();
+		public function hashcode GetHashCode() { return this; }
+	}
+
+	[cpp name("::rdxFloat") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct float
+	{
+		public native coerce largeint;
+		public native coerce long;
+		public native coerce int;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native promote double;
+
+		public native function float __add(float v);
+		public native function float __sub(float v);
+		public native function float __mul(float v);
+		public native function float __div(float v);
+		public native function float __neg();
+		public branching native function bool __gt(float v);
+		public branching native function bool __ge(float v);
+		public branching native function bool __lt(float v);
+		public branching native function bool __le(float v);
+		public branching native function bool __eq(float v);
+		public branching native function bool __ne(float v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxDouble") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct double
+	{
+		public native coerce largeint;
+		public native coerce long;
+		public native coerce int;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native coerce float;
+
+		public native function double __add(double v);
+		public native function double __sub(double v);
+		public native function double __mul(double v);
+		public native function double __div(double v);
+		public native function double __neg();
+		public branching native function bool __gt(double v);
+		public branching native function bool __ge(double v);
+		public branching native function bool __lt(double v);
+		public branching native function bool __le(double v);
+		public branching native function bool __eq(double v);
+		public branching native function bool __ne(double v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxUInt") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct uint
+	{
+		public native coerce largeint;
+		public native promote long;
+		public native coerce int;
+		public native coerce short;
+		public native promote largeuint;
+		public native promote ulong;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native promote double;
+		public native coerce float;
+
+		public native function uint __add(uint v);
+		public native function uint __sub(uint v);
+		public native function uint __mul(uint v);
+		public native function uint __div(uint v);
+		public native function uint __mod(uint v);
+		public branching native function bool __gt(uint v);
+		public branching native function bool __ge(uint v);
+		public branching native function bool __lt(uint v);
+		public branching native function bool __le(uint v);
+		public branching native function bool __eq(uint v);
+		public branching native function bool __ne(uint v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxChar") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct char
+	{
+		public native promote string;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxByte") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct byte
+	{
+		public native promote largeint;
+		public native promote long;
+		public native promote int;
+		public native promote short;
+		public native promote ulong;
+		public native promote largeuint;
+		public native promote uint;
+
+		public native promote string;
+
+		public native promote double;
+		public native promote float;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxULong") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct ulong
+	{
+		public native coerce largeint;
+		public native coerce long;
+		public native coerce int;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native coerce double;
+		public native coerce float;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxLong") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct long
+	{
+		public native coerce largeint;
+		public native coerce int;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native coerce double;
+		public native coerce float;
+
+		public native function hashcode GetHashCode();
+	}
+	
+	[cpp name("::rdxBool") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct bool
+	{
+		public native promote string;
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxBool") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct serializationdetector;
+
+	[cpp name("rdxSTypedRuntimePointer") header("rdx_programmability.hpp") coreheader builtin]
+	public byval struct varying;
+
+	[cpp name("::rdxLargeInt") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct largeint
+	{
+		public native coerce long;
+		public native coerce int;
+		public native coerce short;
+		public native coerce largeuint;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native coerce double;
+		public native coerce float;
+
+		public native function largeint __add(largeint v);
+		public native function largeint __sub(largeint v);
+		public native function largeint __mul(largeint v);
+		public native function largeint __div(largeint v);
+		public native function largeint __mod(largeint v);
+		public native function largeint __neg();
+		public branching native function bool __gt(largeint v);
+		public branching native function bool __ge(largeint v);
+		public branching native function bool __lt(largeint v);
+		public branching native function bool __le(largeint v);
+		public branching native function bool __eq(largeint v);
+		public branching native function bool __ne(largeint v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxLargeUInt") header("rdx_basictypes.hpp") coreheader builtin]
+	public byval struct largeuint
+	{
+		public native coerce largeint;
+		public native coerce long;
+		public native coerce int;
+		public native coerce short;
+		public native coerce ulong;
+		public native coerce uint;
+		public native coerce byte;
+
+		public native promote string;
+
+		public native coerce double;
+		public native coerce float;
+
+		public native function largeuint __add(largeuint v);
+		public native function largeuint __sub(largeuint v);
+		public native function largeuint __mul(largeuint v);
+		public native function largeuint __div(largeuint v);
+		public native function largeuint __mod(largeuint v);
+		public branching native function bool __gt(largeuint v);
+		public branching native function bool __ge(largeuint v);
+		public branching native function bool __lt(largeuint v);
+		public branching native function bool __le(largeuint v);
+		public branching native function bool __eq(largeuint v);
+		public branching native function bool __ne(largeuint v);
+
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp builtin noheader nocode]
+	public final class nullreference
+	{
+	}
+
+	[cpp builtin noheader nocode]
+	public final struct integralconstant
+	{
+	}
+
+	[cpp name("::rdxCString") alwaysconst header("rdx_programmability.hpp") coreheader]
+	public final class string
+	{
+		public typedef Enumeration = char;
+
+		public function char const[] GetEnumerator()
+		{
+			return Chars;
+		}
+
+		public native intercept function char const[] Chars();
+		public native intercept function largeuint Length();
+		public native function string __add(string rs);
+		public native function string Substring(largeuint offset);
+		public native function string Substring(largeuint offset, largeuint length);
+		public native function char __index(largeuint index);
+		public native static function string FromChars(notnull char const[] chars, largeuint offset, largeuint length);
+	}
+
+	[cpp name("::rdxCObject") header("rdx_programmability.hpp") coreheader]
+	public class Object
+	{
+		public native function Core.RDX.Type GetType();
+		//public native intercept function string GlobalSymbol();
+		public branching native function bool CanConvertTo(notnull Core.RDX.Type t);
+		public native function hashcode GetHashCode();
+	}
+
+	[cpp name("::rdxCException") header("rdx_programmability.hpp") coreheader]
+	public class Exception
+	{
+		public property Exception innerException;
+
+		public virtual intercept function string description()
+		{
+			return "";
+		}
+	}
+
+	public class GenericException extends Exception
+	{
+		public property string _desc;
+
+		public virtual intercept function string description()
+		{
+			return _desc;
+		}
+
+		public resource GenericException OutOfMemoryException = new GenericException { _desc = "Allocation failed" };
+	}
+
+	[cpp name("::rdxCArrayContainer") header("rdx_programmability.hpp") coreheader]
+	public localized abstract class Array
+	{
+		public native intercept function largeuint Length();
+		public native function largeuint Dimension(largeuint dimension);
+		public native function void BlockCopy(largeuint srcStart, notnull Array dest, largeuint destStart, largeuint length);
+		public native function Array Clone();
+		public native function Array ToConst();
+		public native function Array ToNonConst();
+	}
+}

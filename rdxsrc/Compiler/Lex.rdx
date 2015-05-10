@@ -1,0 +1,172 @@
+using Core;
+using Core.RDX;
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class TracedErrorException extends Exception
+		{
+			public resource TracedErrorException instance;
+		}
+
+		public struct CodeLocation
+		{
+			public const property string filename;
+			public const property uint line;
+		}
+
+		public struct Token
+		{
+			public const property CodeLocation codeLocation;
+			public const property TokenType tokenType;
+			public const property string str;
+		}
+		
+		public enum TokenType
+		{
+			Unknown,
+
+			Name,
+			String,
+			Punctuation,
+			Number,
+			EOF,
+			
+			RW_Abstract,
+			RW_Anonymous,
+			RW_As,
+			RW_Branching,
+			RW_Break,
+			RW_ByVal,
+			RW_Case,
+			RW_Catch,
+			RW_Class,
+			RW_Coerce,
+			RW_Const,
+			RW_Continue,
+			RW_Default,
+			RW_Delegate,
+			RW_Do,
+			RW_Else,
+			RW_Enum,
+			RW_Explicit,
+			RW_Extends,
+			RW_False,
+			RW_Final,
+			RW_Finally,
+			RW_For,
+			RW_ForEach,
+			RW_Function,
+			RW_If,
+			RW_Implements,
+			RW_In,
+			RW_Intercept,
+			RW_Interface,
+			RW_Is,
+			RW_Local,
+			RW_Localized,
+			RW_MustBeConst,
+			RW_MustBeRef,
+			RW_Native,
+			RW_Namespace,
+			RW_New,
+			RW_NotNull,
+			RW_Null,
+			RW_Private,
+			RW_Promote,
+			RW_Property,
+			RW_Protected,
+			RW_Public,
+			RW_Resource,
+			RW_Return,
+			RW_Static,
+			RW_Struct,
+			RW_Switch,
+			RW_This,
+			RW_Throw,
+			RW_Try,
+			RW_True,
+			RW_Tuple,
+			RW_TypeDef,
+			RW_TypeOf,
+			RW_Using,
+			RW_Virtual,
+			RW_Void,
+			RW_While,
+		}
+
+		public class LexState
+		{
+			private class Backlog
+			{
+				public const property Token token;
+				public const property Backlog next;
+			}
+
+			private property byte const[] _bytes;
+			private property bool _eof;
+			private property Token _currentToken;
+			private property largeuint _offset;
+			private property Backlog _backlog;
+
+			public function void Initialize(byte const[] bytes, string filename)
+			{
+				_bytes = bytes;
+				_currentToken = new Token { codeLocation = new CodeLocation { filename = filename, line = 1 } };
+			}
+
+			public intercept function bool EOF()
+			{
+				return (_backlog == null) && _eof;
+			}
+			
+
+			public function Token GetToken()
+			{
+				if(_backlog != null)
+					return _backlog.token;
+				return _currentToken;
+			}
+			
+			public function bool CheckToken(string str)
+			{
+				local Token tk = GetToken();
+				return tk.tokenType == TokenType.Punctuation && tk.str == str;
+			}
+			
+			public function bool CheckToken(string str, TokenType tt)
+			{
+				local Token tk = GetToken();
+				return tk.tokenType == tt && tk.str == str;
+			}
+
+			public function bool CheckToken(TokenType tt)
+			{
+				local Token tk = GetToken();
+				return tk.tokenType == tt;
+			}
+
+			public native static function bool, Token, ErrorCode, largeuint NextTokenNative(notnull byte const[] bytes, largeuint offset, const CodeLocation currentLoc);
+
+			public function void ReinsertToken(Token tk)
+			{
+				_backlog = new Backlog { token = tk, next = _backlog };
+			}
+
+			public function void NextToken()
+			{
+				if(_backlog != null)
+				{
+					_backlog = _backlog.next;
+					return;
+				}
+
+				if(_eof)
+					return;
+				local ErrorCode errCode;
+				_eof, _currentToken, errCode, _offset = NextTokenNative(_bytes, _offset, _currentToken.codeLocation);
+			}
+		}
+	}
+}

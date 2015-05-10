@@ -1,0 +1,17 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public interface IVisibilityControlled
+		{
+			public intercept function Visibility visibility();
+			public intercept function void visibility(const Visibility v);
+		}
+	}
+}
+

@@ -1,0 +1,16 @@
+Threads are serialized as a sequence of packed values.
+
+The first 3 values are the stack size in bytes (LargeInt), frame count (LargeInt), and journal count (LargeInt).
+
+After the initial info, each frame is stored, starting with the entry-level frame.  The frame info consists of 4 values:
+- The current method
+- The current internal IL instruction index (LargeInt, NOT the RDX IL instruction index)
+- The frame BP offset (LargeInt)
+- The frame PRV offset (LargeInt)
+
+After the frame info, each journal is stored:
+- The type of the journal value
+- The offset of the journal value on the stack (LargeInt)
+- A flag indicating whether or not the journal is a pointer (Bool)
+- A flag indicating whether or not the journal is a varying (Bool)
+

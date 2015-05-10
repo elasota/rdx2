@@ -1,0 +1,123 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class Compiler
+		{
+			public static function uint main(string const[] args)
+			{
+				local CompilerOptions copts = Apps.Common.Serialization.ReadObject(args[0] + ".rdxobj", true) as CompilerOptions;
+				local string cachePath = copts.cachePath;
+
+				local CompilerState cstate = new CompilerState(copts);
+
+				foreach(string fname in copts.sourceFiles)
+				{
+					local DeclSpaceNode declNode = Apps.Common.Serialization.ReadObject(cachePath + NativeServices.HashString(fname) + ".rdxobj", false) as DeclSpaceNode;
+				}
+				
+				cstate.CompileAll();
+
+				return 0;
+			}
+
+			public static function void TempTest()
+			{
+				local List:<string> args = new List:<string>();
+				args.Add("cc2/");
+				args.Add("../rdxsrc/Compiler/CodeEmission/POp.rdx");
+				args.Add("../rdxsrc/Compiler/CodeEmission/PInstr.rdx");
+				args.Add("../rdxsrc/Compiler/AllocateTemporary.rdx");
+				args.Add("../rdxsrc/Compiler/ArrayIndex.rdx");
+				args.Add("../rdxsrc/Compiler/ArrayOfTypeObject.rdx");
+				args.Add("../rdxsrc/Compiler/BoundDelegateMarshal.rdx");
+				args.Add("../rdxsrc/Compiler/BoundDelegateTypeObject.rdx");
+				args.Add("../rdxsrc/Compiler/BoundMethodDelegation.rdx");
+				args.Add("../rdxsrc/Compiler/CheckCast.rdx");
+				args.Add("../rdxsrc/Compiler/CloneExpression.rdx");
+				args.Add("../rdxsrc/Compiler/CodeBlock.rdx");
+				args.Add("../rdxsrc/Compiler/CompilableObject.rdx");
+				args.Add("../rdxsrc/Compiler/CompilableValueExpression.rdx");
+				args.Add("../rdxsrc/Compiler/Compile.rdx");
+				args.Add("../rdxsrc/Compiler/CompilerConstants.rdx");
+				args.Add("../rdxsrc/Compiler/CompilerState.rdx");
+				args.Add("../rdxsrc/Compiler/Constant.rdx");
+				args.Add("../rdxsrc/Compiler/ConvertedExpression.rdx");
+				args.Add("../rdxsrc/Compiler/DefaultInstance.rdx");
+				args.Add("../rdxsrc/Compiler/DelegateMethodGroup.rdx");
+				args.Add("../rdxsrc/Compiler/DelegateTypeObject.rdx");
+				args.Add("../rdxsrc/Compiler/DischargedIntercept.rdx");
+				args.Add("../rdxsrc/Compiler/Disposal.rdx");
+				args.Add("../rdxsrc/Compiler/EnumerantObject.rdx");
+				args.Add("../rdxsrc/Compiler/EqualityCompareOperation.rdx");
+				args.Add("../rdxsrc/Compiler/ImportedNamespace.rdx");
+				args.Add("../rdxsrc/Compiler/Initializer.rdx");
+				args.Add("../rdxsrc/Compiler/InitializeAndRecover.rdx");
+				args.Add("../rdxsrc/Compiler/InitializeArray.rdx");
+				args.Add("../rdxsrc/Compiler/InitializeProperties.rdx");
+				args.Add("../rdxsrc/Compiler/InstanciatedNamespace.rdx");
+				args.Add("../rdxsrc/Compiler/InterfaceImplementationObject.rdx");
+				args.Add("../rdxsrc/Compiler/ICallable.rdx");
+				args.Add("../rdxsrc/Compiler/ICompilable.rdx");
+				args.Add("../rdxsrc/Compiler/IContainsOverloads.rdx");
+				args.Add("../rdxsrc/Compiler/ICObject.rdx");
+				args.Add("../rdxsrc/Compiler/INamedMember.rdx");
+				args.Add("../rdxsrc/Compiler/IValueExpression.rdx");
+				args.Add("../rdxsrc/Compiler/IVisibilityControlled.rdx");
+				args.Add("../rdxsrc/Compiler/Lex.rdx");
+				args.Add("../rdxsrc/Compiler/LocalVariable.rdx");
+				args.Add("../rdxsrc/Compiler/LogicalBinaryOperation.rdx");
+				args.Add("../rdxsrc/Compiler/LogicalNotOperation.rdx");
+				args.Add("../rdxsrc/Compiler/Main.rdx");
+				args.Add("../rdxsrc/Compiler/MemberLookupScope.rdx");
+				args.Add("../rdxsrc/Compiler/MethodCall.rdx");
+				args.Add("../rdxsrc/Compiler/MethodDelegation.rdx");
+				args.Add("../rdxsrc/Compiler/MethodGroup.rdx");
+				args.Add("../rdxsrc/Compiler/MethodObject.rdx");
+				args.Add("../rdxsrc/Compiler/MethodParameterObject.rdx");
+				args.Add("../rdxsrc/Compiler/MultipleValues.rdx");
+				args.Add("../rdxsrc/Compiler/MVTemplate.rdx");
+				args.Add("../rdxsrc/Compiler/Namespace.rdx");
+				args.Add("../rdxsrc/Compiler/NativeServices.rdx");
+				args.Add("../rdxsrc/Compiler/NewInstance.rdx");
+				args.Add("../rdxsrc/Compiler/ObjectMethod.rdx");
+				args.Add("../rdxsrc/Compiler/ObjectProperty.rdx");
+				args.Add("../rdxsrc/Compiler/ParameterList.rdx");
+				args.Add("../rdxsrc/Compiler/Parse.rdx");
+				args.Add("../rdxsrc/Compiler/PlaceholderRValue.rdx");
+				args.Add("../rdxsrc/Compiler/PrecompiledNode.rdx");
+				args.Add("../rdxsrc/Compiler/PropertyInitializer.rdx");
+				args.Add("../rdxsrc/Compiler/PropertyObject.rdx");
+				args.Add("../rdxsrc/Compiler/Scope.rdx");
+				args.Add("../rdxsrc/Compiler/SetIndexCall.rdx");
+				args.Add("../rdxsrc/Compiler/SimpleCompilable.rdx");
+				args.Add("../rdxsrc/Compiler/SimpleCObject.rdx");
+				args.Add("../rdxsrc/Compiler/StaticDelegateTypeObject.rdx");
+				args.Add("../rdxsrc/Compiler/StaticInstance.rdx");
+				args.Add("../rdxsrc/Compiler/StructuredTypeObject.rdx");
+				args.Add("../rdxsrc/Compiler/TernaryExpression.rdx");
+				args.Add("../rdxsrc/Compiler/TypeFinalizer.rdx");
+				args.Add("../rdxsrc/Compiler/TypeReference.rdx");
+				args.Add("../rdxsrc/Compiler/TypeTuple.rdx");
+				args.Add("../rdxsrc/Compiler/Utility.rdx");
+				args.Add("../rdxsrc/Compiler/ValueCountAdjuster.rdx");
+				args.Add("../rdxsrc/Compiler/ValueExpression.rdx");
+				args.Add("../rdxsrc/Compiler/Visibility.rdx");
+				args.Add("../rdxsrc/Compiler/VTAM.rdx");
+				args.Add("../rdxsrc/Compiler/VType.rdx");
+				RDX.Compiler.Parser.main(args.ToArray());
+			}
+		}
+	}
+}
+
+// Variations from rdx_compile:
+// visibility: Use IVisibility
+// initializers: Use IInitializable
+// vftIndex: Changed to use isVirtual since it can be nil in Lua, also is 0-indexed
+// vftOffset in InterfaceImplementation: Add isDefined too

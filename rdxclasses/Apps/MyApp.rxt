@@ -1,0 +1,283 @@
+import 'Core' 'RDX.Type'
+import 'Core' 'uint'
+import 'Core' 'RDX.StructuredType'
+import 'Core' 'RDX.InstructionFileInfo'
+import 'Core' 'RDX.ArrayOfType'
+import 'Core' 'Object'
+import 'Core' 'RDX.MethodParameter'
+import 'Core' 'bool'
+import 'Core' 'uint/methods/#coerce(Core.int)'
+import 'Apps.Common' 'Console/methods/WriteLine(Core.string)'
+import 'Core' 'RDX.InterfaceImplementation'
+import 'Core' 'string'
+import 'Core' 'byte'
+import 'Core' 'int'
+import 'Core' 'RDX.Method'
+def 'Apps.MyApp' 'MyApp' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : null,
+	properties : null,
+}
+
+arraydef '#' 'Core.byte[C]' 'Core' 'byte' const 1
+
+arraydef '#' 'Core.RDX.Type[C]' 'Core' 'RDX.Type' const 1
+
+arraydef '#' 'Core.RDX.InstructionFileInfo[C]' 'Core' 'RDX.InstructionFileInfo' const 1
+
+arraydef '#' 'Core.Object[C]' 'Core' 'Object' const 1
+
+arraydef '#' 'Core.RDX.InterfaceImplementation[C]' 'Core' 'RDX.InterfaceImplementation' const 1
+
+arraydef '#' 'Core.RDX.Method[C]' 'Core' 'RDX.Method' const 1
+
+def 'Apps.MyApp' 'HelloWorldPrinter' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : null,
+	storageSpecifier : 'SS_Interface',
+	enumerants : null,
+	interfaces : null,
+	virtualMethods : res 'Apps.MyApp' 'HelloWorldPrinter/vft',
+	properties : null,
+	isAbstract : true,
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter' 'Core' 'RDX.StructuredType' 1
+	defaultValue : null
+{
+	parentClass : res 'Core' 'Object',
+	storageSpecifier : 'SS_Class',
+	enumerants : null,
+	interfaces : res 'Apps.MyApp' 'MyHelloWorldPrinter/interfaces',
+	virtualMethods : res 'Apps.MyApp' 'MyHelloWorldPrinter/vft',
+	properties : null,
+}
+
+arraydef '#' 'Core.string[C]' 'Core' 'string' const 1
+
+arraydef '#' 'Core.RDX.MethodParameter[C]' 'Core' 'RDX.MethodParameter' const 1
+
+def 'Apps.MyApp' 'HelloWorldPrinter/vft' '#' 'Core.RDX.Method[C]' 1
+{
+	res 'Apps.MyApp' 'HelloWorldPrinter/methods/PrintHelloWorld()',
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/interfaces' '#' 'Core.RDX.InterfaceImplementation[C]' 1
+{
+	{
+		type : res 'Apps.MyApp' 'HelloWorldPrinter',
+		vftOffset : 0,
+	},
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/vft' '#' 'Core.RDX.Method[C]' 1
+{
+	res 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()',
+}
+
+def 'Apps.MyApp' 'HelloWorldPrinter/methods/PrintHelloWorld()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Apps.MyApp.HelloWorldPrinter)',
+	returnTypes : res '#' 'TT-()',
+	vftIndex : 1,
+	thisParameterOffset : 1,
+	bytecode : null,
+	isAbstract : true,
+}
+
+def '#' 'PL-(#Core.string[C])' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res '#' 'Core.string[C]',
+	},
+}
+
+def 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/bytecode' '#' 'Core.byte[C]' 34
+{
+  0,  18,   0,  21,   0,   0,   1,  34,   0,  30,  12,   3,  38,   1,   0,  35, 
+  1,  38,   0,   0,  35,   1,   1,  34,   1,  29,  34,   0,  30,  16,   1,  20, 
+ 35,   0, 
+}
+
+def 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 4
+{
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 27,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 28,
+		firstInstruction : 13,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 27,
+		firstInstruction : 16,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 25,
+		firstInstruction : 17,
+	},
+}
+
+def 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/resArgs' '#' 'Core.Object[C]' 2
+{
+	res 'Core' 'bool',
+	res 'Apps.MyApp' 'HelloWorldPrinter/methods/PrintHelloWorld()',
+}
+
+def 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(Apps.MyApp.HelloWorldPrinter)',
+	returnTypes : res '#' 'TT-()',
+	bytecode : res 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/bytecode',
+	numInstructions : 18,
+	resArgs : res 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/resArgs',
+	instructionFileInfos : res 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)/debugInfo',
+}
+
+def '#' 'PL-(notnull Apps.MyApp.HelloWorldPrinter)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Apps.MyApp' 'HelloWorldPrinter',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def '#' 'TT-()' '#' 'Core.RDX.Type[C]' 0
+{
+}
+
+def 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/bytecode' '#' 'Core.byte[C]' 36
+{
+  0,  18,   0,  22,   0,   1,  33,   0,  34,   1,  29,  34,   1,  30,  15,   2, 
+ 34,   1,  30,  16,   3,  39,   4,   5,  15,   6,  21,   7,  38,   0,   8,  15, 
+  9,  35,   1,  20, 
+}
+
+def 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 6
+{
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 33,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 34,
+		firstInstruction : 5,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 35,
+		firstInstruction : 8,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 37,
+		firstInstruction : 11,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 38,
+		firstInstruction : 13,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 33,
+		firstInstruction : 17,
+	},
+}
+
+def 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/resArgs' '#' 'Core.Object[C]' 10
+{
+	res 'Apps.MyApp' 'HelloWorldPrinter',
+	res 'Apps.MyApp' 'MyHelloWorldPrinter',
+	res 'Apps.MyApp' 'MyApp/methods/PassHWP(Apps.MyApp.HelloWorldPrinter)',
+	res 'Apps.MyApp' 'HelloWorldPrinter/methods/PrintHelloWorld()',
+	'Hello World',
+	res 'Core' 'string',
+	res 'Apps.Common' 'Console/methods/WriteLine(Core.string)',
+	res 'Core' 'int',
+	res 'Core' 'uint',
+	res 'Core' 'uint/methods/#coerce(Core.int)',
+}
+
+def 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(#Core.string[C])',
+	returnTypes : res '#' 'TT-(Core.int)',
+	bytecode : res 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/bytecode',
+	numInstructions : 18,
+	resArgs : res 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/resArgs',
+	instructionFileInfos : res 'Apps.MyApp' 'MyApp/methods/main(#Core.string[C])/debugInfo',
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/bytecode' '#' 'Core.byte[C]' 8
+{
+  0,  39,   0,   1,  15,   2,  35,   0, 
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/debugInfo' '#' 'Core.RDX.InstructionFileInfo[C]' 2
+{
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 19,
+		firstInstruction : 0,
+	},
+	{
+		filename : 'rdxsrc/Apps/test.rdx',
+		line : 17,
+		firstInstruction : 2,
+	},
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/resArgs' '#' 'Core.Object[C]' 3
+{
+	'Hello World',
+	res 'Core' 'string',
+	res 'Apps.Common' 'Console/methods/WriteLine(Core.string)',
+}
+
+def 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()' 'Core' 'RDX.Method' 1
+{
+	parameters : res '#' 'PL-(notnull Apps.MyApp.MyHelloWorldPrinter)',
+	returnTypes : res '#' 'TT-()',
+	thisParameterOffset : 1,
+	bytecode : res 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/bytecode',
+	numInstructions : 3,
+	resArgs : res 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/resArgs',
+	instructionFileInfos : res 'Apps.MyApp' 'MyHelloWorldPrinter/methods/PrintHelloWorld()/debugInfo',
+}
+
+def '#' 'TT-(Core.int)' '#' 'Core.RDX.Type[C]' 1
+{
+	res 'Core' 'int',
+}
+
+def '#' 'PL-(notnull Apps.MyApp.MyHelloWorldPrinter)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Apps.MyApp' 'MyHelloWorldPrinter',
+		isNotNull : true,
+		isConstant : true,
+	},
+}
+
+def '#' 'PL-(Apps.MyApp.HelloWorldPrinter)' '#' 'Core.RDX.MethodParameter[C]' 1
+{
+	{
+		type : res 'Apps.MyApp' 'HelloWorldPrinter',
+	},
+}
+

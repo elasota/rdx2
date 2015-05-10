@@ -1,0 +1,56 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class Scope
+		{
+			public property Dictionary:<string, ICObject> symbols;
+			public property Scope owner;
+			public property bool isRootLevel;
+			public property MethodObject method;
+
+			public function void Initialize(Scope owner)
+			{
+				symbols = new Dictionary:<string, ICObject>();
+				this.owner = owner;
+			}
+
+			public function void InsertUnique(string lookupSymbol, ICObject value, ASTNode incriminate)
+			{
+				Utility.Assert(value == null);
+
+				if(symbols[lookupSymbol] != null)
+					Utility.CError(incriminate, ErrorCode.DuplicateSymbol, lookupSymbol);
+
+				symbols[lookupSymbol] = value;
+			}
+
+			public virtual function ICObject Lookup(string symbol, ASTNode incriminate)
+			{
+				local bool invisibleSymbolWarning = false;
+				if(symbols.ContainsKey(symbol))
+				{
+					local ICObject v = symbols[symbol];
+					if(v is LocalVariable && (v as LocalVariable).isInvisible)
+						invisibleSymbolWarning = true;
+					else
+						return v;
+				}
+
+				local ICObject fallThrough = null;
+				if(owner != null)
+					fallThrough = owner.Lookup(symbol, incriminate);
+
+				if(fallThrough != null && invisibleSymbolWarning)
+					Utility.CWarning(incriminate, WarningCode.InvisibleSymbol, symbol, symbol, null);
+
+				return fallThrough;
+			}
+		}
+	}
+}

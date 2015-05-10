@@ -1,0 +1,42 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class BoundDelegateTypeObject extends DelegateTypeObject
+		{
+			public property Dictionary:<string, BoundDelegateMarshal> methodMarshals;
+			public property Namespace ns;
+			public property ASTNode uncompiledNode;
+
+			public function void Initialize(TokenNode name, ParameterList parameters, TypeTuple returnTypes, Namespace ns, ASTNode uncompiledNode,
+				bool isStatic, ASTNode incriminateNode)
+			{
+				(this as DelegateTypeObject).explicit:Initialize();
+
+				this._name = name;
+				this._parameterList = parameters;
+				this._returnTypes = returnTypes;
+				this.ns = ns;
+				this.isStatic = isStatic;
+				this.methodMarshals = new Dictionary:<string, BoundDelegateMarshal>();
+				this.uncompiledNode = uncompiledNode;
+				this._incriminateNode = incriminateNode;
+			}
+
+			public intercept function void actualParameterList(ParameterList apl)
+			{
+				this._actualParameterList = apl;
+			}
+
+			public final intercept function string printableName()
+			{
+				return "bound delegate type object";
+			}
+		}
+	}
+}

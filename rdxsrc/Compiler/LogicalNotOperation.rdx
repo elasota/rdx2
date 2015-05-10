@@ -1,0 +1,31 @@
+using Core;
+using Core.RDX;
+using Core.Collections;
+
+
+namespace RDX
+{
+	namespace Compiler
+	{
+		public class LogicalNotOperation extends ValueExpression implements IEmittableLogical
+		{
+			public property IValueExpression expression;
+
+			public function void Initialize(const VTAMCollection vtams, IValueExpression expr)
+			{
+				this._vtams = vtams;
+				this.expression = expr;
+			}
+
+			public function void EmitLogical(CompilerState cs, CodeEmission.CodeEmissionState ces, notnull string trueLabel, notnull string falseLabel)
+			{
+				CodeEmission.Emit.EmitLogical(cs, ces, this.expression, falseLabel, trueLabel);
+			}
+
+			public final intercept function string printableName()
+			{
+				return "logical not operation";
+			}
+		}
+	}
+}
